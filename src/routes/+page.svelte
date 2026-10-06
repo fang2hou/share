@@ -6,7 +6,7 @@
   import StatusDot from "#lib/atoms/StatusDot.svelte";
   import ModeSwitcher from "#lib/molecules/ModeSwitcher.svelte";
   import LangNav from "#lib/molecules/LangNav.svelte";
-  import { buildUploadPayload } from "#lib/files.js";
+  import { FileStage } from "#lib/stage.svelte.js";
   import { messages, pickLang, type Lang } from "#shared/i18n.js";
   import type { Item } from "#shared/protocol.js";
   import { SpaceStore } from "#lib/space.svelte.js";
@@ -30,6 +30,9 @@
   }
 
   const space = new SpaceStore();
+  const stage = new FileStage();
+  // physical-keyboard proxy: only these devices see Shift+Enter / Esc hints
+  const hasKeyboard = matchMedia("(hover: hover) and (pointer: fine)").matches;
 
   let now = $state(Date.now());
   let notice = $state("");
@@ -92,14 +95,25 @@
     clearNoticeId = setTimeout(() => (notice = ""), 4_000);
   }
 
-  async function handleFiles(list: File[]): Promise<void> {
-    const payload = await buildUploadPayload(list);
-    if ("error" in payload) {
-      if (payload.error === "too_large") showNotice(m.fileTooLarge);
-      return;
+  async function uploadStaged(): Promise<boolean> {
+    if (stage.busy || stage.files.length === 0) return false;
+    stage.busy = true;
+    try {
+      const payload = await stage.payload();
+      if ("error" in payload) {
+        if (payload.error === "too_large") showNotice(m.fileTooLarge);
+        return false;
+      }
+      const ok = await space.uploadFile(payload.file);
+      if (!ok) {
+        showNotice(m.uploadFailed);
+        return false;
+      }
+      stage.clear();
+      return true;
+    } finally {
+      stage.busy = false;
     }
-    const ok = await space.uploadFile(payload.file);
-    if (!ok) showNotice(m.uploadFailed);
   }
 
   async function handleDelete(id: string): Promise<boolean> {
@@ -136,12 +150,19 @@
   function onDrop(e: DragEvent): void {
     e.preventDefault();
     dragging = 0;
-    void handleFiles([...(e.dataTransfer?.files ?? [])]);
+    const files = [...(e.dataTransfer?.files ?? [])];
+    if (files.length > 0) {
+      stage.add(files);
+      setMode("file");
+    }
   }
 
   function onPaste(e: ClipboardEvent): void {
     const files = [...(e.clipboardData?.files ?? [])];
-    if (files.length > 0) void handleFiles(files);
+    if (files.length > 0) {
+      stage.add(files);
+      setMode("file");
+    }
   }
 
   onMount(() => {
@@ -150,6 +171,7 @@
     return () => {
       clearInterval(tickId);
       clearTimeout(clearNoticeId);
+      stage.dispose();
       space.destroy();
     };
   });
@@ -167,22 +189,24 @@
 <main
   class="mx-auto max-w-3xl space-y-4 py-6 pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] pb-[max(1.5rem,env(safe-area-inset-bottom))]"
 >
-  <!-- flex-wrap: on phones (and iPhone Duo folded) the expanded language strip
-       wraps below the mode switcher instead of overflowing the viewport -->
+  <!-- flex-wrap keeps the header safe if the mode switcher ever outgrows a
+       viewport; on touch the language picker is a collapsed trigger pill -->
   <header class="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
     <div class="flex items-center gap-3">
       <StatusDot status={space.status} />
       <ModeSwitcher {mode} onPick={setMode} labelText={m.modeText} labelFiles={m.modeFiles} />
     </div>
-    <LangNav {lang} onPick={setLang} />
+    <LangNav {lang} label={m.changeLanguage} onPick={setLang} />
   </header>
 
   <Composer
     {m}
     {mode}
+    {hasKeyboard}
+    {stage}
     onSubmit={(text) => space.create(text)}
     onError={() => showNotice(m.sendFailed)}
-    onFiles={(files) => void handleFiles(files)}
+    onUpload={uploadStaged}
   />
   <p aria-live="polite" class="min-h-5 text-sm">
     {#if notice}

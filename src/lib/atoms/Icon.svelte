@@ -9,7 +9,10 @@
     | "link"
     | "ellipsis"
     | "trash"
-    | "type";
+    | "type"
+    | "send"
+    | "x"
+    | "chevronDown";
 
   let { name, size = 20 }: { name: IconName; size?: number } = $props();
 </script>
@@ -65,6 +68,16 @@
     <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
     <path d="M3 6h18" />
     <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+  {:else if name === "send"}
+    <path
+      d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z"
+    />
+    <path d="m21.854 2.147-10.94 10.939" />
+  {:else if name === "x"}
+    <path d="M18 6 6 18" />
+    <path d="m6 6 12 12" />
+  {:else if name === "chevronDown"}
+    <path d="m6 9 6 6 6-6" />
   {:else if name === "type"}
     <path d="M12 4v16" />
     <path d="M4 7V5a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v2" />

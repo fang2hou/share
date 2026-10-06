@@ -17,6 +17,14 @@ button {
   touch-action: manipulation;
 }
 
+/* keyboard-shortcut hints (Shift+Enter, Esc) only make sense with a physical
+   keyboard; hide them on touch-primary devices */
+@media (hover: none) and (pointer: coarse) {
+  .kbd-hint {
+    display: none;
+  }
+}
+
 html:lang(zh-TW) {
   font-family: "IBM Plex Sans TC", "PingFang TC", "Microsoft JhengHei UI", system-ui, sans-serif;
 }

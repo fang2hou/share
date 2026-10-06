@@ -48,6 +48,14 @@ export type Messages = {
   deleteFailed: string;
   modeText: string;
   modeFiles: string;
+  filesUnit: string;
+  send: string;
+  upload: string;
+  clearFiles: string;
+  removeFile: string;
+  zipNameLabel: string;
+  placeholderPlain: string;
+  changeLanguage: string;
 };
 
 export const messages: Record<Lang, Messages> = {
@@ -87,6 +95,14 @@ export const messages: Record<Lang, Messages> = {
     deleteFailed: "删除失败",
     modeText: "文字模式",
     modeFiles: "文件模式",
+    filesUnit: "个文件",
+    send: "发送",
+    upload: "上传",
+    clearFiles: "清空",
+    removeFile: "移除文件",
+    zipNameLabel: "打包文件名",
+    placeholderPlain: "输入文字",
+    changeLanguage: "切换语言",
   },
   "zh-TW": {
     placeholder: "輸入文字，Shift+Enter 傳送",
@@ -124,6 +140,14 @@ export const messages: Record<Lang, Messages> = {
     deleteFailed: "刪除失敗",
     modeText: "文字模式",
     modeFiles: "檔案模式",
+    filesUnit: "個檔案",
+    send: "傳送",
+    upload: "上傳",
+    clearFiles: "清空",
+    removeFile: "移除檔案",
+    zipNameLabel: "壓縮檔名稱",
+    placeholderPlain: "輸入文字",
+    changeLanguage: "切換語言",
   },
   ja: {
     placeholder: "テキストを入力（Shift+Enter で送信）",
@@ -161,6 +185,14 @@ export const messages: Record<Lang, Messages> = {
     deleteFailed: "削除に失敗しました",
     modeText: "テキストモード",
     modeFiles: "ファイルモード",
+    filesUnit: "個のファイル",
+    send: "送信",
+    upload: "アップロード",
+    clearFiles: "クリア",
+    removeFile: "ファイルを削除",
+    zipNameLabel: "ZIP ファイル名",
+    placeholderPlain: "テキストを入力",
+    changeLanguage: "言語を変更",
   },
   ko: {
     placeholder: "텍스트 입력 (Shift+Enter로 전송)",
@@ -198,6 +230,14 @@ export const messages: Record<Lang, Messages> = {
     deleteFailed: "삭제 실패",
     modeText: "텍스트 모드",
     modeFiles: "파일 모드",
+    filesUnit: "개의 파일",
+    send: "전송",
+    upload: "업로드",
+    clearFiles: "모두 지우기",
+    removeFile: "파일 제거",
+    zipNameLabel: "ZIP 파일 이름",
+    placeholderPlain: "텍스트 입력",
+    changeLanguage: "언어 변경",
   },
   en: {
     placeholder: "Type here — Shift+Enter to send",
@@ -235,5 +275,13 @@ export const messages: Record<Lang, Messages> = {
     deleteFailed: "Delete failed",
     modeText: "Text mode",
     modeFiles: "File mode",
+    filesUnit: "files",
+    send: "Send",
+    upload: "Upload",
+    clearFiles: "Clear",
+    removeFile: "Remove file",
+    zipNameLabel: "ZIP name",
+    placeholderPlain: "Type here",
+    changeLanguage: "Change language",
   },
 };

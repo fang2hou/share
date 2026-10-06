@@ -1,18 +1,36 @@
 import { zipSync } from "fflate";
 import { MAX_FILE_BYTES } from "#shared/protocol.js";
 
-function zipName(d: Date): string {
-  const pad = (n: number): string => String(n).padStart(2, "0");
+function pad(n: number): string {
+  return String(n).padStart(2, "0");
+}
+
+export function defaultZipName(d: Date): string {
   return `files-${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}.zip`;
+}
+
+/** Strips path separators and control characters, keeps the .zip suffix. */
+export function sanitizeZipName(raw: string, fallback: string): string {
+  let name = raw
+    .trim()
+    // eslint-disable-next-line no-control-regex -- stripping control chars is the point
+    .replace(/[\\/:*?"<>|\u0000-\u001f]/g, "")
+    .replace(/^\.+/, "");
+  if (!name || name === ".zip") return fallback;
+  if (!name.toLowerCase().endsWith(".zip")) name += ".zip";
+  return name;
 }
 
 export type UploadPayload = { file: File } | { error: "empty" } | { error: "too_large" };
 
 /**
- * Normalizes a dropped/pasted file set into a single uploadable File:
+ * Normalizes a staged file set into a single uploadable File:
  * one file passes through untouched, several files are packaged into one zip.
  */
-export async function buildUploadPayload(list: File[]): Promise<UploadPayload> {
+export async function buildUploadPayload(
+  list: File[],
+  opts: { zipName?: string } = {},
+): Promise<UploadPayload> {
   const files = list.filter((f) => f.size > 0);
   const [first] = files;
   if (!first) return { error: "empty" };
@@ -32,7 +50,9 @@ export async function buildUploadPayload(list: File[]): Promise<UploadPayload> {
       used.add(name);
       entries[name] = new Uint8Array(await file.arrayBuffer());
     }
-    payload = new File([zipSync(entries, { level: 6 })], zipName(new Date()), {
+    const fallback = defaultZipName(new Date());
+    const name = sanitizeZipName(opts.zipName ?? "", fallback);
+    payload = new File([zipSync(entries, { level: 6 })], name, {
       type: "application/zip",
     });
   }
