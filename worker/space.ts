@@ -134,14 +134,17 @@ export class Space extends DurableObject<Env> {
 
   async create(id: string, text: string): Promise<Item> {
     const now = Date.now();
-    await this.ctx.storage.sql.exec(
-      "INSERT INTO items (id, text, created_at, updated_at, kind) VALUES (?, ?, ?, ?, 'text') ON CONFLICT(id) DO NOTHING",
-      id,
-      text,
-      now,
-      now,
-    );
-    const item = this.#selectItem(id);
+    const rows = this.ctx.storage.sql
+      .exec<Row>(
+        `INSERT INTO items (id, text, created_at, updated_at, kind) VALUES (?, ?, ?, ?, 'text') ON CONFLICT(id) DO NOTHING RETURNING ${SELECT_COLUMNS}`,
+        id,
+        text,
+        now,
+        now,
+      )
+      .toArray();
+    // duplicate id: the conflicting row already exists, re-read it for an idempotent response
+    const item = rows.length > 0 ? this.#rowToItem(rows[0]!) : this.#selectItem(id);
     this.broadcast({ type: "upsert", item });
     return item;
   }
@@ -151,16 +154,19 @@ export class Space extends DurableObject<Env> {
     file: { fileName: string; fileSize: number; fileKey: string },
   ): Promise<Item> {
     const now = Date.now();
-    await this.ctx.storage.sql.exec(
-      "INSERT INTO items (id, text, created_at, updated_at, kind, file_name, file_size, file_key) VALUES (?, '', ?, ?, 'file', ?, ?, ?) ON CONFLICT(id) DO NOTHING",
-      id,
-      now,
-      now,
-      file.fileName,
-      file.fileSize,
-      file.fileKey,
-    );
-    const item = this.#selectItem(id);
+    const rows = this.ctx.storage.sql
+      .exec<Row>(
+        `INSERT INTO items (id, text, created_at, updated_at, kind, file_name, file_size, file_key) VALUES (?, '', ?, ?, 'file', ?, ?, ?) ON CONFLICT(id) DO NOTHING RETURNING ${SELECT_COLUMNS}`,
+        id,
+        now,
+        now,
+        file.fileName,
+        file.fileSize,
+        file.fileKey,
+      )
+      .toArray();
+    // duplicate id: the conflicting row already exists, re-read it for an idempotent response
+    const item = rows.length > 0 ? this.#rowToItem(rows[0]!) : this.#selectItem(id);
     this.broadcast({ type: "upsert", item });
     return item;
   }

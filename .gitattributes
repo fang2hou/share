@@ -1,5 +1,6 @@
 * -linguist-detectable
 src/** linguist-detectable
+shared/** linguist-detectable
 worker/** linguist-detectable
 *.json -linguist-detectable
 *.yaml -linguist-detectable

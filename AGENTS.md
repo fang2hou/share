@@ -5,10 +5,9 @@ share is a personal cross-device content relay: a Cloudflare Worker (one SQLite 
 ## Commands
 
 ```bash
-mise install                # toolchain: Node 24, pnpm, prek, cocogitto
+mise install                # toolchain: Node 24, pnpm 12, prek, cocogitto
 mise run dev                # Vite on 5173 (proxies /api and /auth to 8787)
 mise run dev:worker         # wrangler dev on 8787 (local DO/R2 simulation)
-mise run test               # full gate: lint + format + typecheck + tests
 mise run check              # fast gate without tests
 pnpm vitest run test/worker.test.ts -t "share"   # one test by name
 mise run deploy             # build and deploy to Cloudflare
@@ -22,6 +21,7 @@ Follow the [ai-coding-guidelines](https://github.com/fang2hou/ai-coding-guidelin
 - SvelteKit 3.0 prerelease line: validating this stack is a stated goal of the project; upgrade the kit / vite-plugin / adapter trio together.
 - Hand-rolled UI (Tailwind v4 utilities + inline Lucide paths) instead of DaisyUI / shadcn-svelte: the whole UI is six small components and bundle size wins.
 - oxfmt's default style (2-space, double quotes) owns every TS/JS file; never fight the formatter.
+- oxlint stable does not yet lint `.svelte` files (verified against 1.87.0; the oxc docs describe an unreleased capability). `.svelte` script blocks are covered by `svelte-check` and the Svelte MCP autofixer. oxfmt formats `.svelte` files (`"svelte": true` in `.oxfmtrc.json`).
 
 ## Layout
 

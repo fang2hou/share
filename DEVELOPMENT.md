@@ -9,16 +9,16 @@
 
 ## Toolchain
 
-| Tool      | Role                                      | Managed by |
-| --------- | ----------------------------------------- | ---------- |
-| Node 24   | Runtime (Active LTS)                      | mise       |
-| pnpm      | Package manager                           | mise       |
-| oxlint    | Linter (`.oxlintrc.json`)                 | pnpm       |
-| oxfmt     | Formatter (`.oxfmtrc.json`)               | pnpm       |
-| vitest    | Tests (`@cloudflare/vitest-pool-workers`) | pnpm       |
-| prek      | Pre-commit hook → `mise run check`        | mise       |
-| cocogitto | Conventional Commits validation           | mise       |
-| wrangler  | Cloudflare deploy and local simulation    | pnpm       |
+| Tool      | Role                                                                                      | Managed by |
+| --------- | ----------------------------------------------------------------------------------------- | ---------- |
+| Node 24   | Runtime (Active LTS)                                                                      | mise       |
+| pnpm 12   | Package manager                                                                           | mise       |
+| oxlint    | Linter (`.oxlintrc.json`)                                                                 | pnpm       |
+| oxfmt     | Formatter (`.oxfmtrc.json`; TS/JS plus `.svelte` via the embedded prettier-plugin-svelte) | pnpm       |
+| vitest    | Tests (`@cloudflare/vitest-pool-workers`)                                                 | pnpm       |
+| prek      | Pre-commit hook → `mise run check`                                                        | mise       |
+| cocogitto | Conventional Commits validation                                                           | mise       |
+| wrangler  | Cloudflare deploy and local simulation                                                    | pnpm       |
 
 ## Common mise tasks
 
