@@ -194,6 +194,19 @@ export class Space extends DurableObject<Env> {
     return item;
   }
 
+  /** deletes one item; returns the R2 key when a stored file must also go */
+  async removeItem(id: string): Promise<{ fileKey: string | null } | null> {
+    const row = this.ctx.storage.sql
+      .exec<{ id: string; kind: string; file_key: string | null }>(
+        "DELETE FROM items WHERE id = ? RETURNING id, kind, file_key",
+        id,
+      )
+      .toArray()[0];
+    if (!row) return null;
+    this.broadcast({ type: "remove", ids: [row.id] });
+    return { fileKey: row.kind === "file" ? row.file_key : null };
+  }
+
   async setShare(
     id: string,
     share: { active: boolean; maxDownloads: number | null },

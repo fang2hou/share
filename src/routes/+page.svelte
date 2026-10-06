@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import Composer from "#lib/Composer.svelte";
+  import Icon from "#lib/Icon.svelte";
   import ItemCard from "#lib/ItemCard.svelte";
   import UploadCard from "#lib/UploadCard.svelte";
   import { buildUploadPayload } from "#lib/files.js";
@@ -38,8 +39,14 @@
   let notice = $state("");
   let clearNoticeId: number | undefined;
   let dragging = $state(0);
+  let mode = $state<"text" | "file">(localStorage.getItem("ts_mode") === "file" ? "file" : "text");
   /** per-day expand overrides; absence = default (today/yesterday open, older closed) */
   let dayOverrides = $state<Record<string, boolean>>({});
+
+  function setMode(next: "text" | "file"): void {
+    mode = next;
+    localStorage.setItem("ts_mode", next);
+  }
 
   const today = $derived(dayKeyOffset(now, 0));
   const yesterday = $derived(dayKeyOffset(now, 1));
@@ -93,6 +100,12 @@
     }
     const ok = await space.uploadFile(payload.file);
     if (!ok) showNotice(m.uploadFailed);
+  }
+
+  async function handleDelete(id: string): Promise<boolean> {
+    const ok = await space.removeItem(id);
+    if (!ok) showNotice(m.deleteFailed);
+    return ok;
   }
 
   function dragHasFiles(e: DragEvent): boolean {
@@ -153,9 +166,42 @@
 
 <main class="mx-auto max-w-3xl space-y-4 px-4 py-6">
   <header class="flex items-center justify-between">
-    <span class="flex items-center gap-2" title={space.status}>
-      <span class="size-2 rounded-full {dotClass}"></span>
-    </span>
+    <div class="flex items-center gap-3">
+      <span class="size-2 rounded-full {dotClass}" title={space.status}></span>
+      <div
+        class="relative flex items-center rounded-full border border-stone-200/80 bg-white p-0.5 shadow-sm"
+        role="group"
+        aria-label="{m.modeText} / {m.modeFiles}"
+      >
+        <span
+          class="absolute inset-y-0.5 left-0.5 w-[calc(50%-0.125rem)] rounded-full bg-stone-900 transition-transform duration-200 ease-out"
+          style="transform: translateX({mode === 'file' ? '100%' : '0%'})"
+          aria-hidden="true"
+        ></span>
+        <button
+          onclick={() => setMode("text")}
+          aria-pressed={mode === "text"}
+          title={m.modeText}
+          class="relative z-10 flex size-7 items-center justify-center rounded-full transition-colors duration-200 {mode ===
+          'text'
+            ? 'text-white'
+            : 'text-stone-400 hover:text-stone-700'}"
+        >
+          <Icon name="type" size={14} />
+        </button>
+        <button
+          onclick={() => setMode("file")}
+          aria-pressed={mode === "file"}
+          title={m.modeFiles}
+          class="relative z-10 flex size-7 items-center justify-center rounded-full transition-colors duration-200 {mode ===
+          'file'
+            ? 'text-white'
+            : 'text-stone-400 hover:text-stone-700'}"
+        >
+          <Icon name="paperclip" size={14} />
+        </button>
+      </div>
+    </div>
     <nav
       class="flex rounded-full border border-stone-200/80 bg-white p-0.5 shadow-sm"
       aria-label="Language / 语言 / 言語"
@@ -176,6 +222,7 @@
 
   <Composer
     {m}
+    {mode}
     onSubmit={(text) => space.create(text)}
     onError={() => showNotice(m.sendFailed)}
     onFiles={(files) => void handleFiles(files)}
@@ -234,6 +281,7 @@
             pending={space.pending.some((p) => p.id === item.id)}
             onSave={(text) => space.update(item.id, text)}
             onShare={(active, maxDownloads) => space.setShare(item.id, active, maxDownloads)}
+            onDelete={() => handleDelete(item.id)}
           />
         {/each}
       {/if}

@@ -26,7 +26,7 @@ export type Messages = {
   reconnecting: string;
   loginFailed: string;
   retry: string;
-  attach: string;
+  dropHint: string;
   dropHere: string;
   download: string;
   uploadFailed: string;
@@ -40,6 +40,12 @@ export type Messages = {
   loadOlder: string;
   items: string;
   shareViewTitle: string;
+  more: string;
+  delete: string;
+  confirmDelete: string;
+  deleteFailed: string;
+  modeText: string;
+  modeFiles: string;
 };
 
 export const messages: Record<Lang, Messages> = {
@@ -55,11 +61,11 @@ export const messages: Record<Lang, Messages> = {
     sendFailed: "发送失败，内容已放回输入框",
     saveFailed: "保存失败",
     justNow: "刚刚",
-    empty: "最近两天没有内容",
+    empty: "还没有内容",
     reconnecting: "连接中断，正在重连…",
     loginFailed: "GitHub 登录失败。",
     retry: "重试",
-    attach: "添加文件",
+    dropHint: "拖放、粘贴或点击选择文件",
     dropHere: "松开以上传文件",
     download: "下载",
     uploadFailed: "上传失败",
@@ -73,6 +79,12 @@ export const messages: Record<Lang, Messages> = {
     loadOlder: "加载更早",
     items: "条",
     shareViewTitle: "分享的内容",
+    more: "更多操作",
+    delete: "删除",
+    confirmDelete: "再点一次确认",
+    deleteFailed: "删除失败",
+    modeText: "文字模式",
+    modeFiles: "文件模式",
   },
   ja: {
     placeholder: "テキストを入力（Shift+Enter で送信）",
@@ -86,11 +98,11 @@ export const messages: Record<Lang, Messages> = {
     sendFailed: "送信に失敗しました。入力欄に戻しました",
     saveFailed: "保存に失敗しました",
     justNow: "たった今",
-    empty: "直近 2 日間の投稿はありません",
+    empty: "まだ何もありません",
     reconnecting: "接続が切れました。再接続中…",
     loginFailed: "GitHub ログインに失敗しました。",
     retry: "再試行",
-    attach: "ファイルを添付",
+    dropHint: "ドラッグ＆ドロップ、貼り付け、またはクリックしてファイルを選択",
     dropHere: "ドロップしてアップロード",
     download: "ダウンロード",
     uploadFailed: "アップロードに失敗しました",
@@ -104,6 +116,12 @@ export const messages: Record<Lang, Messages> = {
     loadOlder: "さらに読み込む",
     items: "件",
     shareViewTitle: "共有されたテキスト",
+    more: "その他の操作",
+    delete: "削除",
+    confirmDelete: "もう一度タップで確定",
+    deleteFailed: "削除に失敗しました",
+    modeText: "テキストモード",
+    modeFiles: "ファイルモード",
   },
   en: {
     placeholder: "Type here — Shift+Enter to send",
@@ -117,11 +135,11 @@ export const messages: Record<Lang, Messages> = {
     sendFailed: "Send failed — text restored to the input",
     saveFailed: "Save failed",
     justNow: "just now",
-    empty: "Nothing from the last 2 days",
+    empty: "Nothing here yet",
     reconnecting: "Disconnected — reconnecting…",
     loginFailed: "GitHub sign-in failed.",
     retry: "Retry",
-    attach: "Attach files",
+    dropHint: "Drop, paste, or click to pick files",
     dropHere: "Drop files to upload",
     download: "Download",
     uploadFailed: "Upload failed",
@@ -135,5 +153,11 @@ export const messages: Record<Lang, Messages> = {
     loadOlder: "Load older",
     items: "items",
     shareViewTitle: "Shared text",
+    more: "More actions",
+    delete: "Delete",
+    confirmDelete: "Tap again to confirm",
+    deleteFailed: "Delete failed",
+    modeText: "Text mode",
+    modeFiles: "File mode",
   },
 };

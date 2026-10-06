@@ -12,6 +12,7 @@
     pending,
     onSave,
     onShare,
+    onDelete,
   }: {
     item: Item;
     now: number;
@@ -20,6 +21,7 @@
     pending: boolean;
     onSave: (text: string) => Promise<boolean>;
     onShare: (active: boolean, maxDownloads: number | null) => Promise<boolean>;
+    onDelete: () => Promise<boolean>;
   } = $props();
 
   let editing = $state(false);
@@ -28,8 +30,10 @@
   let saveFailed = $state(false);
   let copyState = $state<"idle" | "ok" | "fail">("idle");
   let resetCopyId: number | undefined;
+  let menuOpen = $state(false);
+  let limitInput = $state<number | string>("");
+  let confirmDelete = $state(false);
   let shareOpen = $state(false);
-  let limitInput = $state("");
   let shareBusy = $state(false);
   let linkCopied = $state(false);
   let resetLinkCopiedId: number | undefined;
@@ -106,8 +110,8 @@
   }
 
   async function enableShare(): Promise<void> {
-    const trimmed = limitInput.trim();
-    const max = trimmed.length === 0 ? null : Number(trimmed);
+    // svelte coerces number inputs, so the bound value arrives as number or ""
+    const max = limitInput === "" ? null : Number(limitInput);
     if (max !== null && (!Number.isInteger(max) || max < 1)) return;
     shareBusy = true;
     await onShare(true, max);
@@ -120,9 +124,16 @@
     shareBusy = false;
   }
 
-  const copyLabel = $derived(
-    copyState === "ok" ? m.copied : copyState === "fail" ? m.copyFailed : m.copy,
-  );
+  // deletion is permanent: the first tap arms it, the second confirms
+  async function remove(): Promise<void> {
+    if (!confirmDelete) {
+      confirmDelete = true;
+      return;
+    }
+    await onDelete();
+    confirmDelete = false;
+    menuOpen = false;
+  }
 </script>
 
 <article
@@ -142,7 +153,7 @@
           >
         </div>
         <p class="mt-2 flex min-w-0 items-center gap-2 text-base leading-relaxed text-stone-800">
-          <Icon name="file" size={18} />
+          <Icon name="fileText" size={18} />
           <span class="truncate font-medium">{item.fileName}</span>
           <span class="shrink-0 text-sm text-stone-400">{fileSize}</span>
         </p>
@@ -187,61 +198,105 @@
         </p>
       {/if}
     </div>
-    <div class="flex w-28 shrink-0 flex-col gap-2 sm:w-32">
-      {#if item.kind === "file"}
-        <a
-          href="/api/files/{item.id}"
-          download
-          class="flex h-20 flex-col items-center justify-center gap-1.5 rounded-xl bg-stone-900 text-white transition-all hover:bg-stone-700 active:scale-[.98]"
-        >
-          <Icon name="download" size={20} />
-          <span class="text-sm font-semibold">{m.download}</span>
-        </a>
-      {:else}
-        <button
-          onclick={() => void copy()}
-          class="flex h-20 flex-col items-center justify-center gap-1.5 rounded-xl text-white transition-all active:scale-[.98] {copyState ===
-          'ok'
-            ? 'bg-emerald-600'
-            : copyState === 'fail'
-              ? 'bg-red-600'
-              : 'bg-stone-900 hover:bg-stone-700'}"
-        >
-          <Icon name={copyState === "ok" ? "check" : "copy"} size={20} />
-          <span class="text-sm font-semibold">{copyLabel}</span>
-        </button>
-        {#if !editing && !pending}
-          <button
-            onclick={startEdit}
-            class="flex h-20 flex-col items-center justify-center gap-1.5 rounded-xl border border-stone-300/90 text-stone-600 transition-all hover:border-stone-400 hover:text-stone-900 active:scale-[.98]"
+
+    {#if !editing}
+      <div class="flex shrink-0 flex-col items-center gap-1.5">
+        {#if item.kind === "file"}
+          <a
+            href="/api/files/{item.id}"
+            download
+            aria-label={m.download}
+            title={m.download}
+            class="flex size-10 items-center justify-center rounded-xl bg-stone-900 text-white transition-all hover:bg-stone-700 active:scale-[.97]"
           >
-            <Icon name="pencil" size={20} />
-            <span class="text-sm font-semibold">{m.edit}</span>
+            <Icon name="download" size={17} />
+          </a>
+        {:else}
+          <button
+            onclick={() => void copy()}
+            aria-label={copyState === "ok" ? m.copied : m.copy}
+            title={copyState === "ok" ? m.copied : m.copy}
+            class="flex size-10 items-center justify-center rounded-xl text-white transition-all active:scale-[.97] {copyState ===
+            'ok'
+              ? 'bg-emerald-600'
+              : copyState === 'fail'
+                ? 'bg-red-600'
+                : 'bg-stone-900 hover:bg-stone-700'}"
+          >
+            <Icon name={copyState === "ok" ? "check" : "copy"} size={17} />
           </button>
         {/if}
-      {/if}
-    </div>
+
+        {#if !pending}
+          <div class="relative">
+            <button
+              onclick={() => {
+                menuOpen = !menuOpen;
+                confirmDelete = false;
+              }}
+              aria-label={m.more}
+              aria-expanded={menuOpen}
+              class="flex size-10 items-center justify-center rounded-xl border border-stone-200 text-stone-400 transition-all hover:border-stone-300 hover:text-stone-700 active:scale-[.97] {menuOpen
+                ? 'border-stone-300 text-stone-700'
+                : ''}"
+            >
+              <Icon name="ellipsis" size={17} />
+            </button>
+            {#if menuOpen}
+              <div
+                class="absolute right-0 top-11 z-50 w-36 overflow-hidden rounded-xl border border-stone-200 bg-white py-1 shadow-lg"
+              >
+                <button
+                  class="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm transition-colors {item
+                    .share?.active
+                    ? 'font-medium text-emerald-700'
+                    : 'text-stone-600 hover:bg-stone-50'}"
+                  onclick={() => {
+                    shareOpen = !shareOpen;
+                    menuOpen = false;
+                  }}
+                >
+                  <Icon name="link" size={15} />
+                  {m.share}
+                </button>
+                {#if item.kind === "text"}
+                  <button
+                    class="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm text-stone-600 transition-colors hover:bg-stone-50"
+                    onclick={() => {
+                      startEdit();
+                      menuOpen = false;
+                    }}
+                  >
+                    <Icon name="pencil" size={15} />
+                    {m.edit}
+                  </button>
+                {/if}
+                <button
+                  class="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm transition-colors {confirmDelete
+                    ? 'bg-red-50 font-medium text-red-600'
+                    : 'text-stone-600 hover:bg-stone-50'}"
+                  onclick={() => void remove()}
+                >
+                  <Icon name="trash" size={15} />
+                  {confirmDelete ? m.confirmDelete : m.delete}
+                </button>
+              </div>
+              <!-- close on outside click -->
+              <div
+                class="fixed inset-0 z-40"
+                onclick={() => (menuOpen = false)}
+                aria-hidden="true"
+              ></div>
+            {/if}
+          </div>
+        {/if}
+      </div>
+    {/if}
   </div>
 
-  {#if !editing && !pending}
-    <div class="mt-3 flex items-center gap-2 border-t border-stone-100 pt-2">
-      <button
-        onclick={() => (shareOpen = !shareOpen)}
-        aria-expanded={shareOpen}
-        class="flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-medium transition-colors {item
-          .share?.active
-          ? 'text-emerald-700 hover:bg-emerald-50'
-          : 'text-stone-400 hover:bg-stone-100 hover:text-stone-700'}"
-      >
-        <Icon name="link" size={14} />
-        {m.share}
-        {#if item.share?.active}
-          <span class="tabular-nums {exhausted ? 'text-red-600' : ''}">· {shareCount}</span>
-        {/if}
-      </button>
-    </div>
-    {#if shareOpen}
-      <div class="mt-2 rounded-xl bg-stone-50 p-3">
+  {#if !editing && !pending && shareOpen}
+    <div class="mt-3 border-t border-stone-100 pt-3">
+      <div class="rounded-xl bg-stone-50 p-3">
         {#if item.share?.active}
           <div class="flex flex-wrap items-center gap-2">
             <input
@@ -289,6 +344,6 @@
           </div>
         {/if}
       </div>
-    {/if}
+    </div>
   {/if}
 </article>

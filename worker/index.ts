@@ -160,20 +160,30 @@ async function api(request: Request, env: Env, url: URL): Promise<Response> {
 
   const itemMatch = path.match(/^\/api\/items\/([^/]+)$/);
   if (itemMatch) {
-    if (request.method !== "PATCH") return jsonError("method_not_allowed", 405);
     const itemId = itemMatch[1];
     if (!itemId || !ID_PATTERN.test(itemId)) return jsonError("bad_request", 400);
-    if (!originAllowed(request, env)) return jsonError("forbidden", 403);
-    const length = bodyLength(request);
-    if (!length) return jsonError("length_required", 411);
-    if (length > MAX_BODY_BYTES) return jsonError("payload_too_large", 413);
-    const body = await readJsonBody(request);
-    if (!body) return jsonError("bad_request", 400);
-    const text = validateText(body.text);
-    if (text === null) return jsonError("bad_request", 400);
-    const item = await stub.update(itemId, text);
-    if (item === null) return jsonError("not_found", 404);
-    return Response.json({ item });
+    if (request.method === "DELETE") {
+      if (!originAllowed(request, env)) return jsonError("forbidden", 403);
+      const removed = await stub.removeItem(itemId);
+      if (!removed) return jsonError("not_found", 404);
+      // inline await: when the response returns, the stored bytes are already gone
+      if (removed.fileKey !== null) await env.FILES.delete(removed.fileKey);
+      return Response.json({ ok: true });
+    }
+    if (request.method === "PATCH") {
+      if (!originAllowed(request, env)) return jsonError("forbidden", 403);
+      const length = bodyLength(request);
+      if (!length) return jsonError("length_required", 411);
+      if (length > MAX_BODY_BYTES) return jsonError("payload_too_large", 413);
+      const body = await readJsonBody(request);
+      if (!body) return jsonError("bad_request", 400);
+      const text = validateText(body.text);
+      if (text === null) return jsonError("bad_request", 400);
+      const item = await stub.update(itemId, text);
+      if (item === null) return jsonError("not_found", 404);
+      return Response.json({ item });
+    }
+    return jsonError("method_not_allowed", 405);
   }
 
   const shareMatch = path.match(/^\/api\/items\/([^/]+)\/share$/);

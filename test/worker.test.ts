@@ -445,3 +445,79 @@ describe("files api", () => {
     expect(missing.status).toBe(404);
   });
 });
+
+describe("delete api", () => {
+  it("deletes a text item, broadcasts removal, and 404s on repeat", async () => {
+    const cookie = await sessionCookie("d1");
+    const { messages } = await connectWs(cookie);
+    const snapshot = await messages.next();
+    expect(snapshot.type).toBe("snapshot");
+
+    const id = crypto.randomUUID();
+    expect((await postItem(cookie, id, "to delete")).status).toBe(201);
+    await messages.next(); // upsert
+
+    const res = await SELF.fetch(BASE + "/api/items/" + id, {
+      method: "DELETE",
+      headers: { Cookie: cookie, Origin: ORIGIN },
+    });
+    expect(res.status).toBe(200);
+    const removed = await messages.next();
+    expect(removed).toEqual({ type: "remove", ids: [id] });
+
+    const list = (await (
+      await SELF.fetch(BASE + "/api/items", { headers: { Cookie: cookie } })
+    ).json()) as ItemList;
+    expect(list.items.some((i) => i.id === id)).toBe(false);
+
+    const again = await SELF.fetch(BASE + "/api/items/" + id, {
+      method: "DELETE",
+      headers: { Cookie: cookie, Origin: ORIGIN },
+    });
+    expect(again.status).toBe(404);
+  });
+
+  it("deletes the stored file object behind a file item", async () => {
+    const cookie = await sessionCookie("d2");
+    const id = crypto.randomUUID();
+    const key = "gh:d2/" + id;
+    const res = await SELF.fetch(BASE + "/api/files", {
+      method: "POST",
+      headers: {
+        Cookie: cookie,
+        Origin: ORIGIN,
+        "content-type": "text/plain",
+        "x-id": id,
+        "x-file-name": "gone.txt",
+      },
+      body: "bytes-to-delete",
+    });
+    expect(res.status).toBe(201);
+    expect(await env.FILES.head(key)).not.toBeNull();
+
+    const del = await SELF.fetch(BASE + "/api/items/" + id, {
+      method: "DELETE",
+      headers: { Cookie: cookie, Origin: ORIGIN },
+    });
+    expect(del.status).toBe(200);
+    expect(await env.FILES.head(key)).toBeNull();
+
+    const dl = await SELF.fetch(BASE + "/api/files/" + id, { headers: { Cookie: cookie } });
+    expect(dl.status).toBe(404);
+  });
+
+  it("guards the delete endpoint", async () => {
+    const cookie = await sessionCookie("d3");
+    const evil = await SELF.fetch(BASE + "/api/items/" + crypto.randomUUID(), {
+      method: "DELETE",
+      headers: { Cookie: cookie, Origin: "http://evil.example" },
+    });
+    expect(evil.status).toBe(403);
+
+    const unknown = await SELF.fetch(BASE + "/api/items/" + crypto.randomUUID(), {
+      method: "DELETE",
+      headers: { Cookie: cookie, Origin: ORIGIN },
+    });
+    expect(unknown.status).toBe(404);
+  });
+});

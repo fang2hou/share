@@ -166,6 +166,22 @@ export class SpaceStore {
     }
   }
 
+  // permanent deletion: item row and (for files) the R2 object behind it
+  async removeItem(id: string): Promise<boolean> {
+    try {
+      const res = await fetch("/api/items/" + id, { method: "DELETE" });
+      if (res.status === 401) {
+        location.href = "/auth/login";
+        return false;
+      }
+      if (res.status !== 200) return false;
+      this.remove([id]);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   // upload with real progress; the file goes to /api/files as the raw body (R2-backed)
   async uploadFile(file: File): Promise<boolean> {
     const id = crypto.randomUUID();
