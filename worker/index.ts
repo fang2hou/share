@@ -274,13 +274,34 @@ async function publicShare(
   }
   const lang = requestLang(request);
   const m = messages[lang];
+  // preview card: first line as the title, a longer slice as the description
+  const firstLine = item.text.split("\n").find((l) => l.trim().length > 0) ?? "";
+  const title =
+    firstLine.length > 60 ? firstLine.slice(0, 57) + "…" : firstLine || m.shareViewTitle;
+  const summary = item.text.replaceAll(/\s+/g, " ").trim();
+  const description =
+    (summary.length > 200 ? summary.slice(0, 197) + "…" : summary) || m.shareViewTitle;
+  const origin = new URL(request.url).origin;
   const html =
     '<!doctype html><html lang="' +
     lang +
     '"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">' +
     '<meta name="robots" content="noindex"><title>' +
-    escapeHtml(m.shareViewTitle) +
-    "</title>" +
+    escapeHtml(title) +
+    " — share</title>" +
+    '<meta name="description" content="' +
+    escapeHtml(description) +
+    '">' +
+    '<meta property="og:title" content="' +
+    escapeHtml(title) +
+    '"><meta property="og:description" content="' +
+    escapeHtml(description) +
+    '"><meta property="og:type" content="website"><meta property="og:site_name" content="share">' +
+    '<meta property="og:url" content="' +
+    escapeHtml(request.url) +
+    '"><meta property="og:image" content="' +
+    origin +
+    '/og.png"><meta name="twitter:card" content="summary_large_image">' +
     "<style>body{font-family:system-ui,sans-serif;background:#faf7f2;color:#292524;margin:0;padding:2rem}" +
     "main{max-width:48rem;margin:0 auto;background:#fff;border-radius:1rem;padding:1.5rem;box-shadow:0 1px 2px rgb(0 0 0/.06)}" +
     "pre{white-space:pre-wrap;word-break:break-word;font:inherit;line-height:1.6;margin:0 0 1rem}" +
