@@ -10,7 +10,7 @@ mise run dev                # Vite on 5173 (proxies /api and /auth to 8787)
 mise run dev:worker         # wrangler dev on 8787 (local DO/R2 simulation)
 mise run check              # fast gate without tests
 pnpm vitest run test/worker.test.ts -t "share"   # one test by name
-mise run deploy             # build and deploy to Cloudflare
+mise run deploy             # emergency-only local deploy (CI deploys on merge to main)
 pnpm cf-typegen             # regenerate types after changing wrangler.jsonc
 ```
 
@@ -34,7 +34,7 @@ Follow the [ai-coding-guidelines](https://github.com/fang2hou/ai-coding-guidelin
 ## Boundaries
 
 - Always do: run `pnpm cf-typegen` after touching `wrangler.jsonc`; run the svelte autofixer after editing any `.svelte` file; write Conventional Commits (enforced by prek and `cog check`).
-- Never do: commit `.dev.vars` or any secret; bypass `mise run check`; change the DO schema without an idempotent migration (existing DO instances must upgrade in place).
+- Never do: commit `.dev.vars` or any secret; bypass `mise run check`; change the DO schema without an idempotent migration (existing DO instances must upgrade in place); push directly to `main` (blocked by ruleset — always branch, PR, squash-merge; merging deploys via CI).
 - Ask first: new runtime dependencies; changes to auth, share links, or cross-user isolation; deployment configuration.
 
 ## Language policy (confirmed)

@@ -1,18 +1,20 @@
 # Contributing
 
-Personal repository; small, direct commits are the norm. Branches and pull requests follow the flow below when used.
+All changes land on `main` through pull requests — direct pushes are blocked by the Protect Default Branch ruleset, and merging is squash-only, so every PR becomes exactly one Conventional Commit on `main`.
 
 ## Commit conventions
 
 - Conventional Commits: `feat(scope): ...`, `fix: ...`, `docs`, `ci`, `chore`. History is validated by `cog check` in CI.
+- PR titles must follow the same format — the squash commit takes the PR title.
 - The pre-commit hook (prek) runs `mise run check` and blocks the commit on failure.
 
 ## Change steps
 
-1. Branch from main or commit directly in small steps.
+1. Branch from `main`.
 2. Implement and add behavior-level tests: cover boundaries, error paths, isolation, and budgets — the risks that are real.
 3. `mise run test` green locally.
-4. Push; CI (Validate + Validate commit history) must pass.
+4. Push and open a PR; CI (Validate + Validate commit history) must pass.
+5. Squash-merge. The merge deploys automatically: CI's Deploy job builds and ships the worker to https://share.fang2hou.com.
 
 ## Every pull request description must include
 
