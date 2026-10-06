@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import type { Messages } from "#shared/i18n.js";
-  import Icon from "#lib/Icon.svelte";
+  import Icon from "#lib/atoms/Icon.svelte";
 
   let {
     m,

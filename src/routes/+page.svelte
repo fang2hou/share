@@ -1,20 +1,16 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import Composer from "#lib/Composer.svelte";
-  import Icon from "#lib/Icon.svelte";
-  import ItemCard from "#lib/ItemCard.svelte";
-  import UploadCard from "#lib/UploadCard.svelte";
+  import Composer from "#lib/organisms/Composer.svelte";
+  import ItemCard from "#lib/organisms/ItemCard.svelte";
+  import UploadCard from "#lib/organisms/UploadCard.svelte";
+  import StatusDot from "#lib/atoms/StatusDot.svelte";
+  import ModeSwitcher from "#lib/molecules/ModeSwitcher.svelte";
+  import LangNav from "#lib/molecules/LangNav.svelte";
   import { buildUploadPayload } from "#lib/files.js";
   import { messages, pickLang, type Lang } from "#shared/i18n.js";
   import type { Item } from "#shared/protocol.js";
   import { SpaceStore } from "#lib/space.svelte.js";
   import { dayKey, dayKeyOffset, dayLabel } from "#lib/time.js";
-
-  const LANGS: { id: Lang; label: string }[] = [
-    { id: "zh-CN", label: "简体中文" },
-    { id: "ja", label: "日本語" },
-    { id: "en", label: "English" },
-  ];
 
   function initialLang(): Lang {
     const saved = localStorage.getItem("ts_lang");
@@ -52,13 +48,6 @@
   const yesterday = $derived(dayKeyOffset(now, 1));
 
   const visible: Item[] = $derived([...space.pending, ...space.items]);
-  const dotClass = $derived(
-    space.status === "live"
-      ? "bg-emerald-500"
-      : space.status === "reconnecting"
-        ? "bg-amber-500"
-        : "bg-stone-300",
-  );
 
   type DayGroup = { key: string; label: string; items: Item[]; expanded: boolean };
 
@@ -167,57 +156,10 @@
 <main class="mx-auto max-w-3xl space-y-4 px-4 py-6">
   <header class="flex items-center justify-between">
     <div class="flex items-center gap-3">
-      <span class="size-2 rounded-full {dotClass}" title={space.status}></span>
-      <div
-        class="relative flex items-center rounded-full border border-stone-200/80 bg-white p-0.5 shadow-sm"
-        role="group"
-        aria-label="{m.modeText} / {m.modeFiles}"
-      >
-        <span
-          class="absolute inset-y-0.5 left-0.5 w-[calc(50%-0.125rem)] rounded-full bg-stone-900 transition-transform duration-200 ease-out"
-          style="transform: translateX({mode === 'file' ? '100%' : '0%'})"
-          aria-hidden="true"
-        ></span>
-        <button
-          onclick={() => setMode("text")}
-          aria-pressed={mode === "text"}
-          title={m.modeText}
-          class="relative z-10 flex size-7 items-center justify-center rounded-full transition-colors duration-200 {mode ===
-          'text'
-            ? 'text-white'
-            : 'text-stone-400 hover:text-stone-700'}"
-        >
-          <Icon name="type" size={14} />
-        </button>
-        <button
-          onclick={() => setMode("file")}
-          aria-pressed={mode === "file"}
-          title={m.modeFiles}
-          class="relative z-10 flex size-7 items-center justify-center rounded-full transition-colors duration-200 {mode ===
-          'file'
-            ? 'text-white'
-            : 'text-stone-400 hover:text-stone-700'}"
-        >
-          <Icon name="paperclip" size={14} />
-        </button>
-      </div>
+      <StatusDot status={space.status} />
+      <ModeSwitcher {mode} onPick={setMode} labelText={m.modeText} labelFiles={m.modeFiles} />
     </div>
-    <nav
-      class="flex rounded-full border border-stone-200/80 bg-white p-0.5 shadow-sm"
-      aria-label="Language / 语言 / 言語"
-    >
-      {#each LANGS as l (l.id)}
-        <button
-          onclick={() => setLang(l.id)}
-          aria-pressed={lang === l.id}
-          class="rounded-full px-3 py-1 text-xs font-medium transition-colors {lang === l.id
-            ? 'bg-stone-900 text-white'
-            : 'text-stone-500 hover:text-stone-900'}"
-        >
-          {l.label}
-        </button>
-      {/each}
-    </nav>
+    <LangNav {lang} onPick={setLang} />
   </header>
 
   <Composer

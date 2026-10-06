@@ -6,6 +6,7 @@ import {
   MAX_TEXT_LENGTH,
   SHARE_TOKEN_PATTERN,
 } from "../shared/protocol.ts";
+import type { Item } from "../shared/protocol.ts";
 import { messages, pickLang, type Lang } from "../shared/i18n.ts";
 
 export { Space } from "./space.ts";
@@ -25,6 +26,19 @@ async function readJsonBody(request: Request): Promise<Record<string, unknown> |
 
 function bodyLength(request: Request): number {
   return Number(request.headers.get("Content-Length") ?? "");
+}
+
+/** R2 body → attachment response; shared by the owner download and the public share path */
+function fileResponse(obj: R2ObjectBody, item: Item, cacheControl: string): Response {
+  const name = item.fileName ?? "download";
+  const asciiFallback = name.replace(/[^\x20-\x7e]/g, "_").replace(/"/g, "");
+  return new Response(obj.body, {
+    headers: {
+      "content-type": obj.httpMetadata?.contentType ?? "application/octet-stream",
+      "content-disposition": `attachment; filename="${asciiFallback}"; filename*=UTF-8''${encodeURIComponent(name)}`,
+      "cache-control": cacheControl,
+    },
+  });
 }
 
 async function homepage(request: Request, env: Env): Promise<Response> {
@@ -147,15 +161,7 @@ async function api(request: Request, env: Env, url: URL): Promise<Response> {
     if (!file) return jsonError("not_found", 404);
     const obj = await env.FILES.get(file.fileKey);
     if (!obj) return jsonError("not_found", 404);
-    const name = file.item.fileName ?? "download";
-    const asciiFallback = name.replace(/[^\x20-\x7e]/g, "_").replace(/"/g, "");
-    return new Response(obj.body, {
-      headers: {
-        "content-type": obj.httpMetadata?.contentType ?? "application/octet-stream",
-        "content-disposition": `attachment; filename="${asciiFallback}"; filename*=UTF-8''${encodeURIComponent(name)}`,
-        "cache-control": "private, no-store",
-      },
-    });
+    return fileResponse(obj, file.item, "private, no-store");
   }
 
   const itemMatch = path.match(/^\/api\/items\/([^/]+)$/);
@@ -262,16 +268,9 @@ async function publicShare(
     const obj = await env.FILES.get(result.fileKey);
     if (!obj)
       return new Response("Not Found", { status: 404, headers: { "cache-control": "no-store" } });
-    const name = item.fileName ?? "download";
-    const asciiFallback = name.replace(/[^\x20-\x7e]/g, "_").replace(/"/g, "");
-    return new Response(obj.body, {
-      headers: {
-        "content-type": obj.httpMetadata?.contentType ?? "application/octet-stream",
-        "content-disposition": `attachment; filename="${asciiFallback}"; filename*=UTF-8''${encodeURIComponent(name)}`,
-        "cache-control": "no-store",
-        "x-robots-tag": "noindex",
-      },
-    });
+    const res = fileResponse(obj, item, "no-store");
+    res.headers.set("x-robots-tag", "noindex");
+    return res;
   }
   const lang = requestLang(request);
   const m = messages[lang];

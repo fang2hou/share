@@ -1,15 +1,12 @@
 <script lang="ts">
   import type { Messages } from "#shared/i18n.js";
-  import Icon from "#lib/Icon.svelte";
+  import Icon from "#lib/atoms/Icon.svelte";
+  import { formatFileSize } from "#lib/format.js";
 
   let { name, size, progress, m }: { name: string; size: number; progress: number; m: Messages } =
     $props();
 
-  const sizeLabel = $derived(
-    size >= 1024 * 1024
-      ? (size / 1024 / 1024).toFixed(1) + " MB"
-      : Math.max(1, Math.round(size / 1024)) + " KB",
-  );
+  const sizeLabel = $derived(formatFileSize(size));
 </script>
 
 <article
