@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Messages } from "#shared/i18n.js";
   import Icon from "#lib/atoms/Icon.svelte";
+  import { keys } from "#lib/kbd.js";
 
   let {
     m,
@@ -64,6 +65,9 @@
       >
         <Icon name="link" size={15} />
         {m.share}
+        <span class="ml-auto text-[11px] font-medium tracking-wide text-stone-400"
+          >{keys.share}</span
+        >
       </button>
       {#if showEdit}
         <button
@@ -75,6 +79,9 @@
         >
           <Icon name="pencil" size={15} />
           {m.edit}
+          <span class="ml-auto text-[11px] font-medium tracking-wide text-stone-400"
+            >{keys.edit}</span
+          >
         </button>
       {/if}
       <button
@@ -85,6 +92,11 @@
       >
         <Icon name="trash" size={15} />
         {confirmDelete ? m.confirmDelete : m.delete}
+        <span
+          class="ml-auto text-[11px] font-medium tracking-wide text-stone-400 {confirmDelete
+            ? 'text-red-400'
+            : ''}">{keys.del}</span
+        >
       </button>
     </div>
     <!-- close on outside click -->

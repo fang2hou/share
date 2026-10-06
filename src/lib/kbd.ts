@@ -1,9 +1,8 @@
 // keyboard hint rendering: macOS uses its glyph system (⌘ ⇧ ⏎ ⎋), everyone
 // else gets spelled-out keys
-const platform: string =
-  (navigator as { userAgentData?: { platform?: string } }).userAgentData?.platform ??
-  navigator.platform ??
-  "";
+const uadPlatform = (navigator as { userAgentData?: { platform?: string } }).userAgentData
+  ?.platform;
+const platform: string = (uadPlatform && uadPlatform.trim()) || navigator.platform || "";
 
 export const isMac = /mac/i.test(platform);
 

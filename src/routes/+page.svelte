@@ -2,11 +2,13 @@
   import { flushSync, onMount } from "svelte";
   import Composer from "#lib/organisms/Composer.svelte";
   import ItemCard from "#lib/organisms/ItemCard.svelte";
+  import type { CardApi } from "#lib/organisms/ItemCard.svelte";
   import UploadCard from "#lib/organisms/UploadCard.svelte";
   import StatusDot from "#lib/atoms/StatusDot.svelte";
   import ModeSwitcher from "#lib/molecules/ModeSwitcher.svelte";
   import LangNav from "#lib/molecules/LangNav.svelte";
   import { FileStage } from "#lib/stage.svelte.js";
+  import { keys } from "#lib/kbd.js";
   import { messages, pickLang, type Lang } from "#shared/i18n.js";
   import type { Item } from "#shared/protocol.js";
   import { SpaceStore } from "#lib/space.svelte.js";
@@ -180,6 +182,86 @@
     }
   }
 
+  // ---- hover shortcuts: the card under the pointer (or focus) is the target
+  const cardApis = new Map<string, CardApi>();
+  let hoveredId = $state<string | null>(null);
+  let confirmDeleteId = $state<string | null>(null);
+  let confirmDeleteTimer: number | undefined;
+
+  function registerCard(id: string, api: CardApi): () => void {
+    cardApis.set(id, api);
+    return () => {
+      cardApis.delete(id);
+    };
+  }
+
+  function cardIdFromEvent(e: Event): string | null {
+    const el = (e.target as HTMLElement | null)?.closest?.("article[data-card-id]");
+    return el?.getAttribute("data-card-id") ?? null;
+  }
+
+  function onCardPointerOver(e: PointerEvent): void {
+    const id = cardIdFromEvent(e);
+    if (id) hoveredId = id;
+  }
+
+  function onCardPointerOut(e: PointerEvent): void {
+    const id = cardIdFromEvent(e);
+    if (id && cardIdFromEvent({ ...e, target: e.relatedTarget }) !== id) hoveredId = null;
+  }
+
+  function onCardFocusIn(e: FocusEvent): void {
+    const id = cardIdFromEvent(e);
+    if (id) hoveredId = id;
+  }
+
+  function clearConfirmDelete(): void {
+    confirmDeleteId = null;
+    clearTimeout(confirmDeleteTimer);
+  }
+
+  function isTypingTarget(t: EventTarget | null): boolean {
+    const el = t as HTMLElement | null;
+    if (!el) return false;
+    return el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName);
+  }
+
+  function onShortcutKeydown(e: KeyboardEvent): void {
+    if (confirmDeleteId !== null && e.key === "Escape") {
+      e.preventDefault();
+      clearConfirmDelete();
+      return;
+    }
+    if (hoveredId === null || isTypingTarget(e.target)) return;
+    const withMod = e.metaKey || e.ctrlKey;
+    if (!withMod || e.altKey) return;
+    const key = e.key.toLowerCase();
+    const isCopy = key === "c" && !e.shiftKey;
+    const isShare = key === "c" && e.shiftKey;
+    const isEdit = key === "e";
+    const isDel = key === "d";
+    if (!isCopy && !isShare && !isEdit && !isDel) return;
+    // a real selection wins over the shortcut copy
+    if (isCopy && (window.getSelection()?.toString() ?? "").length > 0) return;
+    const api = cardApis.get(hoveredId);
+    if (!api) return;
+    e.preventDefault();
+    if (isDel) {
+      if (confirmDeleteId === hoveredId) {
+        clearConfirmDelete();
+        void handleDelete(hoveredId);
+      } else {
+        confirmDeleteId = hoveredId;
+        clearTimeout(confirmDeleteTimer);
+        confirmDeleteTimer = setTimeout(clearConfirmDelete, 4_000);
+      }
+      return;
+    }
+    if (isCopy) api.copy();
+    else if (isEdit) api.edit();
+    else api.share();
+  }
+
   onMount(() => {
     mountFavicon();
     space.connect();
@@ -199,10 +281,14 @@
   ondragleave={onDragLeave}
   ondrop={onDrop}
   onpaste={onPaste}
+  onkeydown={onShortcutKeydown}
 />
 <svelte:document onvisibilitychange={onVisibilityChange} />
 
 <main
+  onpointerover={onCardPointerOver}
+  onpointerout={onCardPointerOut}
+  onfocusin={onCardFocusIn}
   class="mx-auto max-w-3xl space-y-4 py-6 pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] pb-[max(1.5rem,env(safe-area-inset-bottom))]"
 >
   <!-- flex-wrap keeps the header safe if the mode switcher ever outgrows a
@@ -279,6 +365,7 @@
             onSave={(text) => space.update(item.id, text)}
             onShare={(active, maxDownloads) => space.setShare(item.id, active, maxDownloads)}
             onDelete={() => handleDelete(item.id)}
+            register={registerCard}
           />
         {/each}
       {/if}
@@ -294,6 +381,24 @@
     </button>
   {/if}
 </main>
+
+{#if confirmDeleteId !== null}
+  <div
+    role="presentation"
+    class="fixed inset-0 z-50 flex items-center justify-center bg-stone-950/40 backdrop-blur-[2px]"
+    onclick={clearConfirmDelete}
+    onkeydown={(e) => e.key === "Escape" && clearConfirmDelete()}
+  >
+    <div
+      class="squircle rounded-2xl border border-stone-200 bg-white px-8 py-6 text-center shadow-2xl"
+    >
+      <p class="text-base font-medium text-stone-800">
+        {m.confirmDeleteKeys.replaceAll("{keys}", keys.del)}
+      </p>
+      <p class="kbd-hint mt-2 text-xs text-stone-400">{keys.esc} · {m.cancel}</p>
+    </div>
+  </div>
+{/if}
 
 {#if dragging > 0}
   <div

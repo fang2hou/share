@@ -4,6 +4,7 @@
   import type { FileStage } from "#lib/stage.svelte.js";
   import { formatFileSize } from "#lib/format.js";
   import Icon from "#lib/atoms/Icon.svelte";
+  import { keys } from "#lib/kbd.js";
 
   let {
     m,
@@ -76,7 +77,9 @@
       oninput={markScrolling}
       onscroll={markScrolling}
       autofocus
-      placeholder={hasKeyboard ? m.placeholder : m.placeholderPlain}
+      placeholder={hasKeyboard
+        ? m.placeholder.replaceAll("{saveKeys}", keys.save)
+        : m.placeholderPlain}
       class="scroll-autohide block max-h-[min(30lh,70dvh)] min-h-[2lh] w-full resize-none overflow-y-auto bg-transparent px-5 pt-4 text-lg leading-relaxed field-sizing-content focus:outline-none"
     ></textarea>
     <div class="flex items-center justify-end px-2 pb-2">

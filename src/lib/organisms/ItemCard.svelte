@@ -1,3 +1,12 @@
+<script module lang="ts">
+  export type CardApi = {
+    copy(): void;
+    edit(): void;
+    share(): void;
+    del(): void;
+  };
+</script>
+
 <script lang="ts">
   import type { Lang, Messages } from "#shared/i18n.js";
   import type { Item } from "#shared/protocol.js";
@@ -7,6 +16,7 @@
   import SharePanel from "#lib/molecules/SharePanel.svelte";
   import { formatFileSize } from "#lib/format.js";
   import { copyText } from "#lib/clipboard.js";
+  import { keys } from "#lib/kbd.js";
 
   let {
     item,
@@ -17,6 +27,7 @@
     onSave,
     onShare,
     onDelete,
+    register,
   }: {
     item: Item;
     now: number;
@@ -26,6 +37,7 @@
     onSave: (text: string) => Promise<boolean>;
     onShare: (active: boolean, maxDownloads: number | null) => Promise<boolean>;
     onDelete: () => Promise<boolean>;
+    register?: (id: string, api: CardApi) => () => void;
   } = $props();
 
   let editing = $state(false);
@@ -71,9 +83,28 @@
     clearTimeout(resetCopyId);
     resetCopyId = setTimeout(() => (copyState = "idle"), 1_500);
   }
+
+  // page-level hover shortcuts call into the card through this API
+  $effect(() => {
+    return (
+      register?.(item.id, {
+        copy: () => void copy(),
+        edit: () => {
+          if (!pending && item.kind === "text") startEdit();
+        },
+        share: () => {
+          if (!pending) shareOpen = !shareOpen;
+        },
+        del: () => {
+          if (!pending) void onDelete();
+        },
+      }) ?? undefined
+    );
+  });
 </script>
 
 <article
+  data-card-id={item.id}
   class="squircle rounded-2xl border border-stone-200/80 bg-white p-4 shadow-sm transition-opacity {pending
     ? 'opacity-60'
     : ''}"
@@ -98,7 +129,7 @@
           class="squircle min-h-20 w-full rounded-xl border border-stone-300/90 bg-white p-3 text-base leading-relaxed field-sizing-content transition placeholder:text-stone-400 focus:border-stone-500 focus:ring-4 focus:ring-orange-500/15 focus:outline-none"
         ></textarea>
         <p class="kbd-hint mt-2 text-xs text-stone-400">
-          {m.editHint}
+          {m.editHint.replaceAll("{saveKeys}", keys.save).replaceAll("{escKeys}", keys.esc)}
           {#if saveFailed}<span class="font-medium text-red-600">{m.saveFailed}</span>{/if}
         </p>
         <div class="mt-2 flex gap-2">
