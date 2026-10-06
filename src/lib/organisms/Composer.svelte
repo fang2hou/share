@@ -66,7 +66,7 @@
 
 {#if mode === "text"}
   <div
-    class="vt-composer rounded-2xl border border-stone-300/90 bg-white shadow-sm transition focus-within:border-stone-500 focus-within:ring-4 focus-within:ring-orange-500/15"
+    class="vt-composer squircle rounded-2xl border border-stone-300/90 bg-white shadow-sm transition focus-within:border-stone-500 focus-within:ring-4 focus-within:ring-orange-500/15"
   >
     <!-- svelte-ignore a11y_autofocus -->
     <textarea
@@ -79,12 +79,12 @@
       placeholder={hasKeyboard ? m.placeholder : m.placeholderPlain}
       class="scroll-autohide block max-h-[min(30lh,70dvh)] min-h-[2lh] w-full resize-none overflow-y-auto bg-transparent px-5 pt-4 text-lg leading-relaxed field-sizing-content focus:outline-none"
     ></textarea>
-    <div class="flex items-center justify-end px-3 pb-3">
+    <div class="flex items-center justify-end px-2 pb-2">
       <button
         type="button"
         onclick={() => void submit()}
         disabled={!canSend}
-        class="flex h-10 items-center gap-2 rounded-xl bg-orange-600 px-5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-orange-700 active:scale-[.98] disabled:pointer-events-none disabled:opacity-40"
+        class="squircle flex h-10 items-center gap-2 rounded-lg bg-orange-600 px-5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-orange-700 active:scale-[.98] disabled:pointer-events-none disabled:opacity-40"
       >
         <Icon name="send" size={16} />
         {m.send}
@@ -94,7 +94,7 @@
 {:else}
   <div class="vt-composer space-y-3">
     <label
-      class="flex min-h-32 cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-stone-300 bg-white py-6 text-stone-400 transition-colors hover:border-orange-400 hover:text-stone-600"
+      class="squircle flex min-h-32 cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-stone-300 bg-white py-6 text-stone-400 transition-colors hover:border-orange-400 hover:text-stone-600"
     >
       <Icon name="paperclip" size={28} />
       <span class="text-sm font-medium">{m.dropHint}</span>
@@ -102,7 +102,9 @@
     </label>
 
     {#if stage.files.length > 0}
-      <ul class="divide-y divide-stone-100 rounded-2xl border border-stone-200 bg-white shadow-sm">
+      <ul
+        class="squircle divide-y divide-stone-100 rounded-2xl border border-stone-200 bg-white shadow-sm"
+      >
         {#each stage.files as f (f.id)}
           <li class="flex items-center gap-3 px-3 py-2.5">
             {#if f.preview}
@@ -133,7 +135,7 @@
 
       {#if stage.files.length > 1}
         <label
-          class="flex items-center gap-3 rounded-2xl border border-stone-200 bg-white px-4 py-3 shadow-sm"
+          class="squircle flex items-center gap-3 rounded-2xl border border-stone-200 bg-white px-4 py-3 shadow-sm"
         >
           <span class="shrink-0 text-xs font-medium text-stone-500">{m.zipNameLabel}</span>
           <input
@@ -156,7 +158,7 @@
             type="button"
             onclick={() => stage.clear()}
             disabled={stage.busy}
-            class="h-10 rounded-xl border border-stone-300 px-4 text-sm font-medium text-stone-600 transition-colors hover:bg-stone-50 disabled:pointer-events-none disabled:opacity-40"
+            class="squircle h-10 rounded-xl border border-stone-300 px-4 text-sm font-medium text-stone-600 transition-colors hover:bg-stone-50 disabled:pointer-events-none disabled:opacity-40"
           >
             {m.clearFiles}
           </button>
@@ -164,7 +166,7 @@
             type="button"
             onclick={() => void onUpload()}
             disabled={stage.busy || stage.files.length === 0}
-            class="flex h-10 items-center gap-2 rounded-xl bg-orange-600 px-5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-orange-700 active:scale-[.98] disabled:pointer-events-none disabled:opacity-40"
+            class="squircle flex h-10 items-center gap-2 rounded-xl bg-orange-600 px-5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-orange-700 active:scale-[.98] disabled:pointer-events-none disabled:opacity-40"
           >
             <Icon name="send" size={16} />
             {m.upload}

@@ -56,7 +56,7 @@
 </script>
 
 <div class="mt-3 border-t border-stone-100 pt-3">
-  <div class="rounded-xl bg-stone-50 p-3">
+  <div class="squircle rounded-xl bg-stone-50 p-3">
     {#if item.share?.active}
       <div class="flex flex-wrap items-center gap-2">
         <input

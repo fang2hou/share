@@ -25,6 +25,12 @@ button {
   }
 }
 
+/* Apple-style continuous corners; ignored by engines without corner-shape,
+   which fall back to the ordinary rounded corners above */
+.squircle {
+  corner-shape: squircle;
+}
+
 html:lang(zh-TW) {
   font-family: "IBM Plex Sans TC", "PingFang TC", "Microsoft JhengHei UI", system-ui, sans-serif;
 }
