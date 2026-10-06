@@ -265,7 +265,12 @@ describe("share links", () => {
       const html = await view.text();
       expect(html).toContain("public payload &lt;b&gt;测试&lt;/b&gt;");
       expect(html).not.toContain("<b>测试</b>");
-
+      // preview card: dynamic title/description, attribute-escaped, never indexed
+      expect(html).toContain(
+        '<meta property="og:title" content="public payload &lt;b&gt;测试&lt;/b&gt;">',
+      );
+      expect(html).toContain('content="noindex"');
+      expect(html).toContain('property="og:image"');
       const after = await enableShare(cookie, id, true, null);
       expect(after.share?.downloads).toBe(1);
     },

@@ -6,8 +6,8 @@ A single Cloudflare Worker does three jobs: it serves the prerendered SvelteKit 
 
 ## Code map
 
-- `shared/` — the only frontend/worker contract: `protocol.ts` (types and constants), `i18n.ts` (message catalogs for three locales)
-- `worker/index.ts` — routing: homepage bootstrap injection, `/api/items|files|ws`, public share path `/f/<sub>.<token>`
+- `shared/` — the only frontend/worker contract: `protocol.ts` (types and constants), `i18n.ts` (message catalogs for five locales)
+- `worker/index.ts` — routing: homepage bootstrap injection, `/api/items|files|ws`, public share path `/f/<sub>.<token>` (noindex but fully OG-tagged for link previews)
 - `worker/auth.ts` — HMAC sessions, GitHub OAuth callback, origin checks
 - `worker/space.ts` — the Space DO: item CRUD, pagination, share tokens and budgets, broadcasts
 - `src/lib/space.svelte.ts` — client state: optimistic inserts, WS heartbeat/reconnect/polling fallback, upload progress
