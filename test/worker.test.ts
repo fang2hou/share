@@ -1,7 +1,7 @@
 import { SELF, env, runInDurableObject } from "cloudflare:test";
 import { describe, expect, it } from "vitest";
 import { signSession } from "../worker/auth.ts";
-import type { Item, ServerMessage } from "../src/lib/protocol.ts";
+import type { Item, ServerMessage } from "../shared/protocol.ts";
 
 const BASE = "http://example.com";
 const ORIGIN = BASE;

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { Messages } from '#lib/i18n.js';
+	import type { Messages } from '#shared/i18n.js';
 	import Icon from '#lib/Icon.svelte';
 
 	let { name, size, progress, m }: { name: string; size: number; progress: number; m: Messages } = $props();

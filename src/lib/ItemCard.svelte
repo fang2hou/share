@@ -1,6 +1,6 @@
 <script lang="ts">
-	import type { Lang, Messages } from '#lib/i18n.js';
-	import type { Item } from '#lib/protocol.js';
+	import type { Lang, Messages } from '#shared/i18n.js';
+	import type { Item } from '#shared/protocol.js';
 	import { absoluteTime, relativeTime } from '#lib/time.js';
 	import Icon from '#lib/Icon.svelte';
 

@@ -1,4 +1,4 @@
-import { messages, pickLang, type Lang } from "../src/lib/i18n.ts";
+import { messages, pickLang, type Lang } from "../shared/i18n.ts";
 
 const SESSION_COOKIE = "ts_session";
 const STATE_COOKIE = "ts_oauth_state";

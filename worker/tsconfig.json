@@ -15,7 +15,7 @@
   "include": [
     "./**/*.ts",
     "../worker-configuration.d.ts",
-    "../src/lib/protocol.ts",
-    "../src/lib/i18n.ts"
+    "../shared/protocol.ts",
+    "../shared/i18n.ts"
   ]
 }

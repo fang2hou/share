@@ -1,29 +1,29 @@
-# 贡献指南
+# Contributing
 
-个人仓库，改动以小步提交为主；如使用分支与 pull request，遵循以下流程。
+Personal repository; small, direct commits are the norm. Branches and pull requests follow the flow below when used.
 
-## 提交规范
+## Commit conventions
 
-- Conventional Commits：`feat(scope): ...`、`fix: ...`、`docs`、`ci`、`chore` 等；历史由 `cog check` 在 CI 校验。
-- pre-commit 钩子（prek）运行 `mise run check`，失败即阻止提交。
+- Conventional Commits: `feat(scope): ...`, `fix: ...`, `docs`, `ci`, `chore`. History is validated by `cog check` in CI.
+- The pre-commit hook (prek) runs `mise run check` and blocks the commit on failure.
 
-## 变更步骤
+## Change steps
 
-1. 从 main 拉分支或直接小步提交。
-2. 实现 + 补测试（行为级：覆盖边界、错误路径、隔离与预算等真实风险）。
-3. 本地 `mise run test` 全绿。
-4. push；CI（Validate + Validate commit history）必须通过。
+1. Branch from main or commit directly in small steps.
+2. Implement and add behavior-level tests: cover boundaries, error paths, isolation, and budgets — the risks that are real.
+3. `mise run test` green locally.
+4. Push; CI (Validate + Validate commit history) must pass.
 
-## Pull Request 描述必须包含
+## Every pull request description must include
 
-- 变更目的
-- 变更影响
-- 相关背景
-- 潜在风险
-- 已执行的校验（命令 + 结果）
+- Purpose of the change
+- Impact of the change
+- Relevant background or context
+- Potential risks or concerns
+- Checks executed (commands and outcomes)
 
-## 评审要点
+## Review focus
 
-- 安全敏感面（auth、公开外链、跨用户隔离、cookie/origin 校验）变更必须逐行评审。
-- Durable Object schema 变更必须幂等可迁移。
-- 新依赖需说明五个问题：解决什么、为何这个、维护状态、体积、替代方案。
+- Security-sensitive surfaces (auth, public share links, cross-user isolation, cookie/origin checks) get line-by-line review.
+- Durable Object schema changes must be idempotent and migrate existing instances.
+- A new dependency answers five questions: what problem, why this package, maintenance status, bundle cost, alternatives considered.

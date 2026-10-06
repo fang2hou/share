@@ -3,8 +3,9 @@
 	import Composer from '#lib/Composer.svelte';
 	import ItemCard from '#lib/ItemCard.svelte';
 	import UploadCard from '#lib/UploadCard.svelte';
-	import { messages, pickLang, type Lang } from '#lib/i18n.js';
-	import { MAX_FILE_BYTES, type Item } from '#lib/protocol.js';
+	import { buildUploadPayload } from '#lib/files.js';
+	import { messages, pickLang, type Lang } from '#shared/i18n.js';
+	import type { Item } from '#shared/protocol.js';
 	import { SpaceStore } from '#lib/space.svelte.js';
 	import { dayKey, dayKeyOffset, dayLabel } from '#lib/time.js';
 
@@ -80,40 +81,13 @@
 		clearNoticeId = setTimeout(() => (notice = ''), 4_000);
 	}
 
-	function zipName(d: Date): string {
-		const pad = (n: number): string => String(n).padStart(2, '0');
-		return `files-${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}.zip`;
-	}
-
 	async function handleFiles(list: File[]): Promise<void> {
-		const files = list.filter((f) => f.size > 0);
-		const [first] = files;
-		if (!first) return;
-		let payload: File;
-		if (files.length === 1) {
-			payload = first;
-		} else {
-			// several files at once are packaged into a single zip, downloaded as one on the other side
-			const entries: Record<string, Uint8Array> = {};
-			const used = new Set<string>();
-			for (const file of files) {
-				let name = file.name || 'file';
-				let n = 2;
-				while (used.has(name)) {
-					name = `${n}-${file.name || 'file'}`;
-					n++;
-				}
-				used.add(name);
-				entries[name] = new Uint8Array(await file.arrayBuffer());
-			}
-			const { zipSync } = await import('fflate');
-			payload = new File([zipSync(entries, { level: 6 })], zipName(new Date()), { type: 'application/zip' });
-		}
-		if (payload.size > MAX_FILE_BYTES) {
-			showNotice(m.fileTooLarge);
+		const payload = await buildUploadPayload(list);
+		if ('error' in payload) {
+			if (payload.error === 'too_large') showNotice(m.fileTooLarge);
 			return;
 		}
-		const ok = await space.uploadFile(payload);
+		const ok = await space.uploadFile(payload.file);
 		if (!ok) showNotice(m.uploadFailed);
 	}
 

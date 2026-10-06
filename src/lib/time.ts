@@ -1,4 +1,4 @@
-import { messages, type Lang } from "./i18n.js";
+import { messages, type Lang } from "#shared/i18n.js";
 
 const rtfCache = new Map<Lang, Intl.RelativeTimeFormat>();
 const dtfCache = new Map<Lang, Intl.DateTimeFormat>();

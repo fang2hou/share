@@ -5,8 +5,8 @@ import {
   MAX_FILE_BYTES,
   MAX_TEXT_LENGTH,
   SHARE_TOKEN_PATTERN,
-} from "../src/lib/protocol.ts";
-import { messages, pickLang, type Lang } from "../src/lib/i18n.ts";
+} from "../shared/protocol.ts";
+import { messages, pickLang, type Lang } from "../shared/i18n.ts";
 
 export { Space } from "./space.ts";
 

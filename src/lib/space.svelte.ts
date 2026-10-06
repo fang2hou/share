@@ -1,4 +1,4 @@
-import { WS_PING, WS_PONG, type Item, type ServerMessage } from "./protocol.js";
+import { WS_PING, WS_PONG, type Item, type ServerMessage } from "#shared/protocol.js";
 
 export class SpaceStore {
   items = $state<Item[]>([]);

@@ -1,5 +1,5 @@
 import { DurableObject } from "cloudflare:workers";
-import { PAGE_SIZE, WS_PING, WS_PONG, type Item, type ServerMessage } from "../src/lib/protocol.ts";
+import { PAGE_SIZE, WS_PING, WS_PONG, type Item, type ServerMessage } from "../shared/protocol.ts";
 
 type Row = {
   id: string;
