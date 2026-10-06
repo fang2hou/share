@@ -35,11 +35,15 @@
   // physical-keyboard proxy: only these devices see Shift+Enter / Esc hints
   const hasKeyboard = matchMedia("(hover: hover) and (pointer: fine)").matches;
 
-  // unread count shown in the favicon while the tab is in the background
+  // unread count surfaced in the favicon badge and the tab title
   let unread = 0;
+  function applyUnread(): void {
+    setFaviconBadge(unread);
+    document.title = unread > 0 ? `share. (+${unread})` : "share.";
+  }
   function bumpUnread(): void {
     unread = Math.min(unread + 1, 99);
-    setFaviconBadge(unread);
+    applyUnread();
   }
 
   let now = $state(Date.now());
@@ -138,7 +142,7 @@
     if (document.visibilityState !== "visible") return;
     now = Date.now();
     unread = 0;
-    setFaviconBadge(0);
+    applyUnread();
   }
 
   function onDragEnter(e: DragEvent): void {
