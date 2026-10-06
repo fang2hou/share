@@ -164,8 +164,12 @@
 />
 <svelte:document onvisibilitychange={onVisibilityChange} />
 
-<main class="mx-auto max-w-3xl space-y-4 px-4 py-6">
-  <header class="flex items-center justify-between">
+<main
+  class="mx-auto max-w-3xl space-y-4 py-6 pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] pb-[max(1.5rem,env(safe-area-inset-bottom))]"
+>
+  <!-- flex-wrap: on phones (and iPhone Duo folded) the expanded language strip
+       wraps below the mode switcher instead of overflowing the viewport -->
+  <header class="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
     <div class="flex items-center gap-3">
       <StatusDot status={space.status} />
       <ModeSwitcher {mode} onPick={setMode} labelText={m.modeText} labelFiles={m.modeFiles} />

@@ -184,7 +184,8 @@
     opacity: 0;
   }
 
-  /* devices without hover: stay expanded with full labels */
+  /* devices without hover: the strip can never expand on demand, so show all
+     languages with full labels at all times (the header wraps on narrow screens) */
   @media (hover: none) {
     .langbtn > .short {
       display: none;
@@ -193,6 +194,13 @@
     .langbtn > .full {
       max-width: 7em;
       opacity: 1;
+    }
+
+    .langnav:not(:hover):not(:focus-within) .langbtn:not(.is-selected) {
+      max-width: 7em;
+      padding-inline: 0.75rem;
+      opacity: 1;
+      visibility: visible;
     }
   }
 

@@ -28,7 +28,7 @@
     onclick={() => onPick("text")}
     aria-pressed={mode === "text"}
     title={labelText}
-    class="relative z-10 flex size-7 items-center justify-center rounded-full transition-colors duration-200 {mode ===
+    class="relative z-10 flex size-7 items-center justify-center rounded-full transition-colors duration-200 pointer-coarse:size-9 {mode ===
     'text'
       ? 'text-white'
       : 'text-stone-400 hover:text-stone-700'}"
@@ -39,7 +39,7 @@
     onclick={() => onPick("file")}
     aria-pressed={mode === "file"}
     title={labelFiles}
-    class="relative z-10 flex size-7 items-center justify-center rounded-full transition-colors duration-200 {mode ===
+    class="relative z-10 flex size-7 items-center justify-center rounded-full transition-colors duration-200 pointer-coarse:size-9 {mode ===
     'file'
       ? 'text-white'
       : 'text-stone-400 hover:text-stone-700'}"

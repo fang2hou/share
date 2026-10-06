@@ -2,6 +2,19 @@
 
 html {
   font-family: "IBM Plex Sans SC", "PingFang SC", "Microsoft YaHei UI", system-ui, sans-serif;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background-color: #faf7f2;
+  /* app-like feel: no rubber-band page bounce or pull-to-refresh jank on iOS */
+  overscroll-behavior-y: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button {
+  /* kill the legacy 300ms delay / double-tap zoom on iOS */
+  touch-action: manipulation;
 }
 
 html:lang(zh-TW) {
@@ -10,10 +23,6 @@ html:lang(zh-TW) {
 
 html:lang(ko) {
   font-family: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
-}
-
-body {
-  background-color: #faf7f2;
 }
 
 ::selection {

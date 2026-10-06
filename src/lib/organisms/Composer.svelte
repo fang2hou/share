@@ -69,7 +69,7 @@
       onscroll={markScrolling}
       autofocus
       placeholder={m.placeholder}
-      class="scroll-autohide block max-h-[min(30lh,70vh)] min-h-[2lh] w-full resize-none overflow-y-auto bg-transparent px-5 py-4 text-lg leading-relaxed field-sizing-content focus:outline-none"
+      class="scroll-autohide block max-h-[min(30lh,70dvh)] min-h-[2lh] w-full resize-none overflow-y-auto bg-transparent px-5 py-4 text-lg leading-relaxed field-sizing-content focus:outline-none"
     ></textarea>
   </div>
 {:else}
