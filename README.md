@@ -43,7 +43,7 @@ Open http://localhost:5173 and sign in with GitHub. `mise run` lists every other
 - **Text blocks** — Shift+Enter to send (IME-safe), editable, one-click copy
 - **Files** — drag, paste, or pick; multiple files auto-package into one zip; 75 MB cap with live progress
 - **Realtime** — WebSocket push with automatic reconnect and polling fallback
-- **Share links** — per-item public URLs (`/f/<sub>.<token>`) that work without login; optional download budget; revoke anytime
+- **Share links** — per-item public URLs (`/f/<sub>.<token>`) that work without login; optional download budget; revoke anytime; rich social-preview cards, excluded from search indexes
 - **Day grouping** — today and yesterday expanded, older days collapsed, history loads on demand
 - **Permanent retention** — items stay until you remove them
 - **Five-language UI** — 简体中文 / 繁體中文 / 日本語 / 한국어 / English, follows the browser language with a manual switch
