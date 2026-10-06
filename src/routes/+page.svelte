@@ -61,9 +61,11 @@
 		}
 		const result: DayGroup[] = [];
 		for (const [key, items] of byDay) {
+			const first = items[0];
+			if (first === undefined) continue;
 			const override = dayOverrides[key];
 			const expanded = override ?? (key === today || key === yesterday);
-			result.push({ key, label: dayLabel(items[0].createdAt, lang), items, expanded });
+			result.push({ key, label: dayLabel(first.createdAt, lang), items, expanded });
 		}
 		return result;
 	});
@@ -85,10 +87,11 @@
 
 	async function handleFiles(list: File[]): Promise<void> {
 		const files = list.filter((f) => f.size > 0);
-		if (files.length === 0) return;
+		const [first] = files;
+		if (!first) return;
 		let payload: File;
 		if (files.length === 1) {
-			payload = files[0];
+			payload = first;
 		} else {
 			// several files at once are packaged into a single zip, downloaded as one on the other side
 			const entries: Record<string, Uint8Array> = {};
@@ -118,54 +121,51 @@
 		return [...(e.dataTransfer?.types ?? [])].includes('Files');
 	}
 
+	function onVisibilityChange(): void {
+		if (document.visibilityState === 'visible') now = Date.now();
+	}
+
+	function onDragEnter(e: DragEvent): void {
+		if (!dragHasFiles(e)) return;
+		e.preventDefault();
+		dragging++;
+	}
+
+	function onDragOver(e: DragEvent): void {
+		if (!dragHasFiles(e)) return;
+		e.preventDefault();
+	}
+
+	function onDragLeave(e: DragEvent): void {
+		if (!dragHasFiles(e)) return;
+		e.preventDefault();
+		dragging = Math.max(0, dragging - 1);
+	}
+
+	function onDrop(e: DragEvent): void {
+		e.preventDefault();
+		dragging = 0;
+		void handleFiles([...(e.dataTransfer?.files ?? [])]);
+	}
+
+	function onPaste(e: ClipboardEvent): void {
+		const files = [...(e.clipboardData?.files ?? [])];
+		if (files.length > 0) void handleFiles(files);
+	}
+
 	onMount(() => {
 		space.connect();
 		const tickId = setInterval(() => (now = Date.now()), 15_000);
-		const onVisibility = () => {
-			if (document.visibilityState === 'visible') now = Date.now();
-		};
-		const onDragEnter = (e: DragEvent) => {
-			if (!dragHasFiles(e)) return;
-			e.preventDefault();
-			dragging++;
-		};
-		const onDragOver = (e: DragEvent) => {
-			if (!dragHasFiles(e)) return;
-			e.preventDefault();
-		};
-		const onDragLeave = (e: DragEvent) => {
-			if (!dragHasFiles(e)) return;
-			e.preventDefault();
-			dragging = Math.max(0, dragging - 1);
-		};
-		const onDrop = (e: DragEvent) => {
-			e.preventDefault();
-			dragging = 0;
-			void handleFiles([...(e.dataTransfer?.files ?? [])]);
-		};
-		const onPaste = (e: ClipboardEvent) => {
-			const files = [...(e.clipboardData?.files ?? [])];
-			if (files.length > 0) void handleFiles(files);
-		};
-		document.addEventListener('visibilitychange', onVisibility);
-		window.addEventListener('dragenter', onDragEnter);
-		window.addEventListener('dragover', onDragOver);
-		window.addEventListener('dragleave', onDragLeave);
-		window.addEventListener('drop', onDrop);
-		window.addEventListener('paste', onPaste);
 		return () => {
 			clearInterval(tickId);
 			clearTimeout(clearNoticeId);
-			document.removeEventListener('visibilitychange', onVisibility);
-			window.removeEventListener('dragenter', onDragEnter);
-			window.removeEventListener('dragover', onDragOver);
-			window.removeEventListener('dragleave', onDragLeave);
-			window.removeEventListener('drop', onDrop);
-			window.removeEventListener('paste', onPaste);
 			space.destroy();
 		};
 	});
 </script>
+
+<svelte:window ondragenter={onDragEnter} ondragover={onDragOver} ondragleave={onDragLeave} ondrop={onDrop} onpaste={onPaste} />
+<svelte:document onvisibilitychange={onVisibilityChange} />
 
 <main class="mx-auto max-w-3xl space-y-4 px-4 py-6">
 	<header class="flex items-center justify-between">

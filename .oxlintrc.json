@@ -1,0 +1,14 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["typescript", "unicorn", "import"],
+  "categories": {
+    "correctness": "error"
+  },
+  "ignorePatterns": [
+    "build/**",
+    ".svelte-kit/**",
+    ".wrangler/**",
+    "node_modules/**",
+    "worker-configuration.d.ts"
+  ]
+}

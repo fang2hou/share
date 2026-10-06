@@ -1,13 +1,21 @@
 {
-	"compilerOptions": {
-		"target": "es2024",
-		"lib": ["es2024"],
-		"module": "esnext",
-		"moduleResolution": "bundler",
-		"strict": true,
-		"noEmit": true,
-		"allowImportingTsExtensions": true,
-		"types": []
-	},
-	"include": ["./**/*.ts", "../worker-configuration.d.ts", "../src/lib/protocol.ts", "../src/lib/i18n.ts"]
+  "compilerOptions": {
+    "target": "es2024",
+    "lib": ["es2024"],
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "verbatimModuleSyntax": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "types": []
+  },
+  "include": [
+    "./**/*.ts",
+    "../worker-configuration.d.ts",
+    "../src/lib/protocol.ts",
+    "../src/lib/i18n.ts"
+  ]
 }

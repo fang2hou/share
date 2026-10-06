@@ -1,2 +1,46 @@
 [tools]
 node = "24"
+pnpm = "latest"
+prek = "latest"
+cocogitto = "latest"
+
+[tasks.dev]
+run = "pnpm dev"
+description = "Vite dev server on 5173 (proxies /api and /auth to the worker)"
+
+[tasks."dev:worker"]
+run = "pnpm dev:worker"
+description = "wrangler dev on 8787 (local DO + R2 simulation)"
+
+[tasks.lint]
+run = "pnpm lint"
+description = "oxlint"
+
+[tasks.format]
+run = "pnpm format"
+description = "oxfmt write"
+
+[tasks."format:check"]
+run = "pnpm format:check"
+description = "oxfmt --check"
+
+[tasks.typecheck]
+run = "pnpm typecheck"
+description = "svelte-check + tsc for worker and test"
+
+[tasks.check]
+depends = ["lint", "format:check", "typecheck"]
+description = "Fast quality gate for every commit"
+
+[tasks.test]
+depends = ["check"]
+run = "pnpm test"
+description = "Full worker test suite (runs after check)"
+
+[tasks.build]
+run = "pnpm build"
+description = "Vite production build into build/"
+
+[tasks.deploy]
+run = "pnpm run deploy"
+description = "Build then wrangler deploy"

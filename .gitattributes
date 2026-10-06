@@ -1,0 +1,7 @@
+* -linguist-detectable
+src/** linguist-detectable
+worker/** linguist-detectable
+*.json -linguist-detectable
+*.yaml -linguist-detectable
+*.toml -linguist-detectable
+pnpm-lock.yaml linguist-generated
