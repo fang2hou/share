@@ -28,6 +28,8 @@
     onShare,
     onDelete,
     register,
+    confirmDelete = false,
+    onDismissConfirm = () => {},
   }: {
     item: Item;
     now: number;
@@ -38,6 +40,8 @@
     onShare: (active: boolean, maxDownloads: number | null) => Promise<boolean>;
     onDelete: () => Promise<boolean>;
     register?: (id: string, api: CardApi) => () => void;
+    confirmDelete?: boolean;
+    onDismissConfirm?: () => void;
   } = $props();
 
   let editing = $state(false);
@@ -105,7 +109,7 @@
 
 <article
   data-card-id={item.id}
-  class="squircle rounded-2xl border border-stone-200/80 bg-white p-4 shadow-sm transition-opacity {pending
+  class="squircle relative rounded-2xl border border-stone-200/80 bg-white p-4 shadow-sm transition-opacity {pending
     ? 'opacity-60'
     : ''}"
 >
@@ -199,5 +203,19 @@
 
   {#if !editing && !pending && shareOpen}
     <SharePanel {item} {m} {onShare} />
+  {/if}
+
+  {#if confirmDelete}
+    <div
+      role="presentation"
+      class="squircle absolute inset-0 z-10 flex flex-col items-center justify-center gap-1 rounded-2xl bg-white/85 backdrop-blur-[2px]"
+      onclick={onDismissConfirm}
+      onkeydown={(e) => e.key === "Escape" && onDismissConfirm()}
+    >
+      <p class="px-4 text-center text-base font-medium text-red-600">
+        {m.confirmDeleteKeys.replaceAll("{keys}", keys.del)}
+      </p>
+      <p class="kbd-hint text-xs text-stone-400">{keys.esc} · {m.cancel}</p>
+    </div>
   {/if}
 </article>
