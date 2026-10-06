@@ -41,7 +41,7 @@ Follow the [ai-coding-guidelines](https://github.com/fang2hou/ai-coding-guidelin
 
 - Code, comments, and commit messages: English.
 - All project documents: English. Non-English text appears only inside localization catalogs (`shared/i18n.ts`) and localized test fixtures.
-- UI copy: zh-CN / ja / en fully supported, follows the browser language with a manual persistent switch; Japanese copy is written natively, never translated from Chinese.
+- UI copy: zh-CN / zh-TW / ja / ko / en fully supported, follows the browser language with a manual persistent switch; every locale is written natively, never translated from another language.
 - The public share page renders in the visitor's Accept-Language.
 
 ## Project conventions

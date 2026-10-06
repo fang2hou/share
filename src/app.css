@@ -4,8 +4,12 @@ html {
   font-family: "IBM Plex Sans SC", "PingFang SC", "Microsoft YaHei UI", system-ui, sans-serif;
 }
 
-html:lang(ja) {
-  font-family: "IBM Plex Sans JP", "Hiragino Sans", "Yu Gothic UI", system-ui, sans-serif;
+html:lang(zh-TW) {
+  font-family: "IBM Plex Sans TC", "PingFang TC", "Microsoft JhengHei UI", system-ui, sans-serif;
+}
+
+html:lang(ko) {
+  font-family: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
 }
 
 body {
@@ -16,7 +20,56 @@ body {
   background-color: #fed7aa;
 }
 
-/* styled native scrollbar: fully interactive, invisible when idle, tinted while scrolling */
+/* same-document View Transitions: only the named composer group animates on a
+   mode switch; the unnamed root stays perfectly still */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+}
+
+.vt-composer {
+  view-transition-name: composer;
+}
+
+html[data-mode-from="text"] {
+  --vt-out-x: -28px;
+  --vt-in-x: 28px;
+}
+
+html[data-mode-from="file"] {
+  --vt-out-x: 28px;
+  --vt-in-x: -28px;
+}
+
+::view-transition-old(composer) {
+  animation: vt-out 0.2s ease both;
+}
+
+::view-transition-new(composer) {
+  animation: vt-in 0.2s ease both;
+}
+
+@keyframes vt-out {
+  to {
+    opacity: 0;
+    transform: translateX(var(--vt-out-x, 28px)) scale(0.98);
+  }
+}
+
+@keyframes vt-in {
+  from {
+    opacity: 0;
+    transform: translateX(var(--vt-in-x, -28px)) scale(0.98);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation-duration: 0.01ms;
+  }
+}
 .scroll-autohide {
   scrollbar-width: thin;
   scrollbar-color: transparent transparent;

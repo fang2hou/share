@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { flushSync, onMount } from "svelte";
   import Composer from "#lib/organisms/Composer.svelte";
   import ItemCard from "#lib/organisms/ItemCard.svelte";
   import UploadCard from "#lib/organisms/UploadCard.svelte";
@@ -14,7 +14,7 @@
 
   function initialLang(): Lang {
     const saved = localStorage.getItem("ts_lang");
-    if (saved === "zh-CN" || saved === "ja" || saved === "en") return saved;
+    if (saved !== null && saved in messages) return saved as Lang;
     return pickLang(navigator.languages);
   }
 
@@ -40,8 +40,19 @@
   let dayOverrides = $state<Record<string, boolean>>({});
 
   function setMode(next: "text" | "file"): void {
-    mode = next;
+    if (next === mode) return;
     localStorage.setItem("ts_mode", next);
+    if (typeof document.startViewTransition !== "function") {
+      mode = next;
+      return;
+    }
+    // direction-aware swap: the composer slides the way the toggle thumb went
+    document.documentElement.dataset.modeFrom = mode;
+    document.startViewTransition(() =>
+      flushSync(() => {
+        mode = next;
+      }),
+    );
   }
 
   const today = $derived(dayKeyOffset(now, 0));
