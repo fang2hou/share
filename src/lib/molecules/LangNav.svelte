@@ -29,9 +29,30 @@
     observer.observe(nav);
     return () => observer.disconnect();
   });
+
+  // while the strip is expanding or collapsing, the thumb must track the
+  // button every frame; a CSS transition here lags the shrinking container
+  // and the thumb visually detaches. Selection changes in the steady state
+  // keep the sliding transition.
+  // state (not classList) so the compiler keeps the .tracking CSS rule alive
+  let tracking = $state(false);
+  let settleId: number | undefined;
+  function trackLive(): void {
+    tracking = true;
+    clearTimeout(settleId);
+    settleId = setTimeout(() => (tracking = false), 350);
+  }
 </script>
 
-<nav bind:this={nav} class="langnav" aria-label="Language / 语言 / 言語 / 언어">
+<nav
+  bind:this={nav}
+  class="langnav"
+  class:tracking
+  onpointerenter={trackLive}
+  onpointerleave={trackLive}
+  onfocusin={trackLive}
+  onfocusout={trackLive}
+>
   <span class="thumb" aria-hidden="true"></span>
   {#each LANGS as l (l.id)}
     <button
@@ -56,6 +77,9 @@
     display: flex;
     align-items: center;
     padding: 0.125rem;
+    /* the thumb may lag the collapsing strip; clipping keeps it inside so the
+       collapse reads as one glide to the right instead of a fling past the edge */
+    overflow: hidden;
     border-radius: 9999px;
     border: 1px solid rgb(231 229 228 / 0.8);
     background: #fff;
@@ -71,8 +95,12 @@
     border-radius: 9999px;
     background: rgb(28 25 23);
     transition:
-      left 0.2s ease,
-      width 0.2s ease;
+      left 0.25s ease-out,
+      width 0.25s ease-out;
+  }
+
+  .langnav.tracking .thumb {
+    transition: none;
   }
 
   .langbtn {
@@ -91,9 +119,9 @@
     color: rgb(120 113 108);
     transition:
       color 0.2s ease,
-      max-width 0.25s ease,
-      padding-inline 0.25s ease,
-      opacity 0.2s ease,
+      max-width 0.25s ease-out,
+      padding-inline 0.25s ease-out,
+      opacity 0.2s ease-out,
       visibility 0s;
   }
 
@@ -105,6 +133,12 @@
     color: #fff;
   }
 
+  /* clipped container eats outer focus rings; draw the ring inside instead */
+  .langbtn:focus-visible {
+    outline: 2px solid rgb(249 115 22);
+    outline-offset: -2px;
+  }
+
   /* collapsed: only the selected language shows, as its short label; hidden
      buttons stay visible until the collapse animation has finished */
   .langnav:not(:hover):not(:focus-within) .langbtn:not(.is-selected) {
@@ -114,19 +148,18 @@
     visibility: hidden;
     transition:
       color 0.2s ease,
-      max-width 0.25s ease,
-      padding-inline 0.25s ease,
-      opacity 0.2s ease,
+      max-width 0.25s ease-out,
+      padding-inline 0.25s ease-out,
+      opacity 0.2s ease-out,
       visibility 0s linear 0.25s;
   }
 
   /* selected label cross-fades short -> full as the strip expands */
   .langbtn > .short,
   .langbtn > .full {
-    overflow: hidden;
     transition:
-      max-width 0.25s ease,
-      opacity 0.15s ease;
+      max-width 0.25s ease-out,
+      opacity 0.15s ease-out;
   }
 
   .langbtn > .short {
