@@ -8,7 +8,6 @@
   import ModeSwitcher from "#lib/molecules/ModeSwitcher.svelte";
   import LangNav from "#lib/molecules/LangNav.svelte";
   import { FileStage } from "#lib/stage.svelte.js";
-  import { keys } from "#lib/kbd.js";
   import { messages, pickLang, type Lang } from "#shared/i18n.js";
   import type { Item } from "#shared/protocol.js";
   import { SpaceStore } from "#lib/space.svelte.js";
@@ -293,14 +292,6 @@
 >
   <!-- flex-wrap keeps the header safe if the mode switcher ever outgrows a
        viewport; on touch the language picker is a collapsed trigger pill -->
-  <header class="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
-    <div class="flex items-center gap-3">
-      <StatusDot status={space.status} />
-      <ModeSwitcher {mode} onPick={setMode} labelText={m.modeText} labelFiles={m.modeFiles} />
-    </div>
-    <LangNav {lang} label={m.changeLanguage} onPick={setLang} />
-  </header>
-
   <Composer
     {m}
     {mode}
@@ -366,6 +357,8 @@
             onShare={(active, maxDownloads) => space.setShare(item.id, active, maxDownloads)}
             onDelete={() => handleDelete(item.id)}
             register={registerCard}
+            confirmDelete={confirmDeleteId === item.id}
+            onDismissConfirm={clearConfirmDelete}
           />
         {/each}
       {/if}
@@ -381,24 +374,6 @@
     </button>
   {/if}
 </main>
-
-{#if confirmDeleteId !== null}
-  <div
-    role="presentation"
-    class="fixed inset-0 z-50 flex items-center justify-center bg-stone-950/40 backdrop-blur-[2px]"
-    onclick={clearConfirmDelete}
-    onkeydown={(e) => e.key === "Escape" && clearConfirmDelete()}
-  >
-    <div
-      class="squircle rounded-2xl border border-stone-200 bg-white px-8 py-6 text-center shadow-2xl"
-    >
-      <p class="text-base font-medium text-stone-800">
-        {m.confirmDeleteKeys.replaceAll("{keys}", keys.del)}
-      </p>
-      <p class="kbd-hint mt-2 text-xs text-stone-400">{keys.esc} · {m.cancel}</p>
-    </div>
-  </div>
-{/if}
 
 {#if dragging > 0}
   <div
