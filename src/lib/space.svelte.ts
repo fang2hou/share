@@ -14,6 +14,8 @@ export class SpaceStore {
   #attempts = 0;
   #pongAt = 0;
   #destroyed = false;
+  #local = new Set<string>();
+  #onRemote: ((item: Item) => void) | undefined;
 
   #onVisibility = (): void => {
     if (this.#destroyed || document.visibilityState !== "visible") return;
@@ -27,7 +29,8 @@ export class SpaceStore {
     this.connect();
   };
 
-  constructor() {
+  constructor(opts: { onRemote?: (item: Item) => void } = {}) {
+    this.#onRemote = opts.onRemote;
     const el = document.getElementById("bootstrap");
     if (el) {
       el.remove();
@@ -125,6 +128,7 @@ export class SpaceStore {
 
   async create(text: string): Promise<boolean> {
     const id = crypto.randomUUID();
+    this.#local.add(id);
     const now = Date.now();
     this.pending.unshift({ id, text, createdAt: now, updatedAt: now, kind: "text" });
     try {
@@ -185,6 +189,7 @@ export class SpaceStore {
   // upload with real progress; the file goes to /api/files as the raw body (R2-backed)
   async uploadFile(file: File): Promise<boolean> {
     const id = crypto.randomUUID();
+    this.#local.add(id);
     this.uploads.unshift({ id, name: file.name, size: file.size, progress: 0 });
     const { promise, resolve, reject } = Promise.withResolvers<{
       status: number;
@@ -285,8 +290,13 @@ export class SpaceStore {
     try {
       const msg = JSON.parse(raw as string) as ServerMessage;
       if (msg.type === "snapshot") this.applySnapshot(msg.items, msg.hasMore);
-      else if (msg.type === "upsert") this.upsert(msg.item);
-      else if (msg.type === "remove") this.remove(msg.ids);
+      else if (msg.type === "upsert") {
+        this.upsert(msg.item);
+        // new content from another device: creation (not an edit), not ours
+        if (!this.#local.has(msg.item.id) && msg.item.createdAt === msg.item.updatedAt) {
+          this.#onRemote?.(msg.item);
+        }
+      } else if (msg.type === "remove") this.remove(msg.ids);
     } catch {
       // malformed message; ignore
     }

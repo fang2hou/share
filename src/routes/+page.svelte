@@ -10,6 +10,7 @@
   import { messages, pickLang, type Lang } from "#shared/i18n.js";
   import type { Item } from "#shared/protocol.js";
   import { SpaceStore } from "#lib/space.svelte.js";
+  import { mountFavicon, setFaviconBadge } from "#lib/favicon.js";
   import { dayKey, dayKeyOffset, dayLabel } from "#lib/time.js";
 
   function initialLang(): Lang {
@@ -29,10 +30,17 @@
     localStorage.setItem("ts_lang", next);
   }
 
-  const space = new SpaceStore();
+  const space = new SpaceStore({ onRemote: () => bumpUnread() });
   const stage = new FileStage();
   // physical-keyboard proxy: only these devices see Shift+Enter / Esc hints
   const hasKeyboard = matchMedia("(hover: hover) and (pointer: fine)").matches;
+
+  // unread count shown in the favicon while the tab is in the background
+  let unread = 0;
+  function bumpUnread(): void {
+    unread = Math.min(unread + 1, 99);
+    setFaviconBadge(unread);
+  }
 
   let now = $state(Date.now());
   let notice = $state("");
@@ -127,7 +135,10 @@
   }
 
   function onVisibilityChange(): void {
-    if (document.visibilityState === "visible") now = Date.now();
+    if (document.visibilityState !== "visible") return;
+    now = Date.now();
+    unread = 0;
+    setFaviconBadge(0);
   }
 
   function onDragEnter(e: DragEvent): void {
@@ -166,6 +177,7 @@
   }
 
   onMount(() => {
+    mountFavicon();
     space.connect();
     const tickId = setInterval(() => (now = Date.now()), 15_000);
     return () => {
