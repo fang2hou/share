@@ -125,34 +125,8 @@
     </div>
 
     {#if !editing}
-      <div class="flex shrink-0 flex-col items-center gap-1.5">
-        {#if item.kind === "file"}
-          <a
-            href="/api/files/{item.id}"
-            download
-            aria-label={m.download}
-            title={m.download}
-            class="flex size-10 items-center justify-center rounded-xl bg-stone-900 text-white transition-all hover:bg-stone-700 active:scale-[.97]"
-          >
-            <Icon name="download" size={17} />
-          </a>
-        {:else}
-          <button
-            onclick={() => void copy()}
-            aria-label={copyState === "ok" ? m.copied : m.copy}
-            title={copyState === "ok" ? m.copied : m.copy}
-            class="flex size-10 items-center justify-center rounded-xl text-white transition-all active:scale-[.97] {copyState ===
-            'ok'
-              ? 'bg-emerald-600'
-              : copyState === 'fail'
-                ? 'bg-red-600'
-                : 'bg-stone-900 hover:bg-stone-700'}"
-          >
-            <Icon name={copyState === "ok" ? "check" : "copy"} size={17} />
-          </button>
-        {/if}
-
-        {#if !pending}
+      {#if !pending}
+        <div class="flex shrink-0 items-start">
           <ActionMenu
             {m}
             showEdit={item.kind === "text"}
@@ -161,8 +135,36 @@
             onEdit={startEdit}
             {onDelete}
           />
-        {/if}
-      </div>
+        </div>
+      {/if}
+
+      <!-- full-height rail inset 4px from the card edge: card 16px - 4px gap
+           = 12px button radius, concentric with the card corners -->
+      {#if item.kind === "file"}
+        <a
+          href="/api/files/{item.id}"
+          download
+          aria-label={m.download}
+          title={m.download}
+          class="-my-3 -mr-3 flex w-14 shrink-0 items-center justify-center self-stretch rounded-xl bg-stone-900 text-white transition-all hover:bg-stone-700 active:scale-[.98]"
+        >
+          <Icon name="download" size={17} />
+        </a>
+      {:else}
+        <button
+          onclick={() => void copy()}
+          aria-label={copyState === "ok" ? m.copied : m.copy}
+          title={copyState === "ok" ? m.copied : m.copy}
+          class="-my-3 -mr-3 flex w-14 shrink-0 items-center justify-center self-stretch rounded-xl text-white transition-all active:scale-[.98] {copyState ===
+          'ok'
+            ? 'bg-emerald-600'
+            : copyState === 'fail'
+              ? 'bg-red-600'
+              : 'bg-stone-900 hover:bg-stone-700'}"
+        >
+          <Icon name={copyState === "ok" ? "check" : "copy"} size={17} />
+        </button>
+      {/if}
     {/if}
   </div>
 
