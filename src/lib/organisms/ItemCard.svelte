@@ -97,7 +97,7 @@
           autofocus
           class="min-h-20 w-full rounded-xl border border-stone-300/90 bg-white p-3 text-base leading-relaxed field-sizing-content transition placeholder:text-stone-400 focus:border-stone-500 focus:ring-4 focus:ring-orange-500/15 focus:outline-none"
         ></textarea>
-        <p class="mt-2 text-xs text-stone-400">
+        <p class="kbd-hint mt-2 text-xs text-stone-400">
           {m.editHint}
           {#if saveFailed}<span class="font-medium text-red-600">{m.saveFailed}</span>{/if}
         </p>
