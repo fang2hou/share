@@ -126,16 +126,24 @@ export class SpaceStore {
     }
   }
 
-  async create(text: string): Promise<boolean> {
+  async create(text: string, meta: { filename?: string; suffix?: string } = {}): Promise<boolean> {
     const id = crypto.randomUUID();
     this.#local.add(id);
     const now = Date.now();
-    this.pending.unshift({ id, text, createdAt: now, updatedAt: now, kind: "text" });
+    this.pending.unshift({
+      id,
+      text,
+      createdAt: now,
+      updatedAt: now,
+      kind: "text",
+      filename: meta.filename,
+      suffix: meta.suffix,
+    });
     try {
       const res = await fetch("/api/items", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, text }),
+        body: JSON.stringify({ id, text, filename: meta.filename, suffix: meta.suffix }),
       });
       if (res.status === 401) {
         location.href = "/auth/login";

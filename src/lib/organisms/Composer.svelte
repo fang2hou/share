@@ -4,6 +4,7 @@
   import type { FileStage } from "#lib/stage.svelte.js";
   import { formatFileSize } from "#lib/format.js";
   import Icon from "#lib/atoms/Icon.svelte";
+  import LangPicker from "#lib/molecules/LangPicker.svelte";
   import { keys } from "#lib/kbd.js";
 
   let {
@@ -19,12 +20,14 @@
     mode: "text" | "file";
     hasKeyboard: boolean;
     stage: FileStage;
-    onSubmit: (text: string) => Promise<boolean>;
+    onSubmit: (text: string, meta: { filename?: string; suffix?: string }) => Promise<boolean>;
     onError: () => void;
     onUpload: () => Promise<boolean>;
   } = $props();
 
   let value = $state("");
+  let filename = $state("");
+  let suffix = $state<string | null>(null);
   let area = $state<HTMLTextAreaElement | undefined>();
   let hideScrollId: number | undefined;
 
@@ -33,11 +36,18 @@
   async function submit(): Promise<void> {
     const text = value.trim();
     if (text.length === 0) return;
+    const meta = {
+      filename: filename.trim().length > 0 ? filename.trim() : undefined,
+      suffix: suffix ?? undefined,
+    };
     value = "";
-    const ok = await onSubmit(text);
+    const ok = await onSubmit(text, meta);
     if (!ok) {
       value = value.length === 0 ? text : text + "\n" + value;
       onError();
+    } else {
+      filename = "";
+      suffix = null;
     }
   }
 
@@ -82,14 +92,28 @@
         : m.placeholderPlain}
       class="scroll-autohide block max-h-[min(30lh,70dvh)] min-h-[2lh] w-full resize-none overflow-y-auto bg-transparent px-5 pt-4 text-lg leading-relaxed field-sizing-content focus:outline-none"
     ></textarea>
-    <div class="flex items-center justify-end px-2 pb-2">
+    <div class="flex flex-wrap items-center gap-2 px-2 pb-2">
+      <input
+        bind:value={filename}
+        maxlength={64}
+        placeholder={m.filenamePlaceholder}
+        class="code-font h-9 min-w-32 flex-1 rounded-lg border border-stone-300/90 bg-white px-2.5 text-sm text-stone-700 placeholder:font-sans placeholder:text-stone-400 focus:border-stone-500 focus:ring-4 focus:ring-orange-500/15 focus:outline-none"
+      />
+      <div class="w-36 shrink-0 sm:w-44">
+        <LangPicker
+          bind:value={suffix}
+          placeholder={m.suffixPlaceholder}
+          searchPlaceholder={m.searchSuffix}
+          noResults={m.noSuffixMatches}
+          clearLabel={m.clearSuffix}
+        />
+      </div>
       <button
         type="button"
         onclick={() => void submit()}
         disabled={!canSend}
-        class="squircle flex h-10 items-center gap-2 rounded-lg bg-orange-600 px-5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-orange-700 active:scale-[.98] disabled:pointer-events-none disabled:opacity-40"
+        class="ml-auto flex h-10 items-center gap-2 rounded-lg bg-orange-600 px-5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-orange-700 active:scale-[.98] disabled:pointer-events-none disabled:opacity-40"
       >
-        <Icon name="send" size={16} />
         {m.send}
       </button>
     </div>
@@ -169,9 +193,8 @@
             type="button"
             onclick={() => void onUpload()}
             disabled={stage.busy || stage.files.length === 0}
-            class="squircle flex h-10 items-center gap-2 rounded-xl bg-orange-600 px-5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-orange-700 active:scale-[.98] disabled:pointer-events-none disabled:opacity-40"
+            class="flex h-10 items-center gap-2 rounded-lg bg-orange-600 px-5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-orange-700 active:scale-[.98] disabled:pointer-events-none disabled:opacity-40"
           >
-            <Icon name="send" size={16} />
             {m.upload}
           </button>
         </div>

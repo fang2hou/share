@@ -41,6 +41,8 @@ Open http://localhost:5173 and sign in with GitHub. `mise run` lists every other
 ## ✨ Features
 
 - **Text blocks** — Shift+Enter to send (IME-safe), editable, one-click copy
+- **Code snippets** — optional filename and language suffix per text block; recognized languages get syntax highlighting (lazy highlight.js, one small chunk per language) and a language tag; a filename adds a download action
+  to the item menu
 - **Files** — drag, paste, or pick; multiple files auto-package into one zip; 75 MB cap with live progress
 - **Realtime** — WebSocket push with automatic reconnect and polling fallback
 - **Share links** — per-item public URLs (`/f/<sub>.<token>`) that work without login; optional download budget; revoke anytime; rich social-preview cards, excluded from search indexes
@@ -52,7 +54,8 @@ Open http://localhost:5173 and sign in with GitHub. `mise run` lists every other
 
 First paint is a single HTML round trip: the worker injects the initial list into the prerendered shell, so no second data request happens before the list is visible.
 
-Evidence: one long-cached JS bundle (51 KB gz), CSS inlined into the shell, zero web-font requests; cross-tab push latency measured at 2–6 ms against a local wrangler dev worker (Apple M-series, Node 24, 2026-10).
+Evidence: long-cached JS chunks (the split bundle keeps highlighting grammars out of the initial load), CSS inlined into the shell, zero web-font requests; cross-tab push latency measured at 2–6 ms against a local
+wrangler dev worker (Apple M-series, Node 24, 2026-10).
 
 ## 📚 Learn More
 

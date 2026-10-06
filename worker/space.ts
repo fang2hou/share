@@ -10,6 +10,8 @@ type Row = {
   file_name: string | null;
   file_size: number | null;
   file_key: string | null;
+  filename: string | null;
+  suffix: string | null;
   share_token: string | null;
   share_active: number;
   share_max_downloads: number | null;
@@ -17,7 +19,7 @@ type Row = {
 };
 
 const SELECT_COLUMNS =
-  "id, text, created_at, updated_at, kind, file_name, file_size, file_key, share_token, share_active, share_max_downloads, share_downloads";
+  "id, text, created_at, updated_at, kind, file_name, file_size, file_key, filename, suffix, share_token, share_active, share_max_downloads, share_downloads";
 
 function b64url(bytes: Uint8Array): string {
   let binary = "";
@@ -41,6 +43,8 @@ function rowToItem(row: Row): Item {
     item.fileSize = row.file_size ?? undefined;
   } else {
     item.text = row.text;
+    item.filename = row.filename ?? undefined;
+    item.suffix = row.suffix ?? undefined;
   }
   if (row.share_active === 1 || row.share_token !== null || row.share_downloads > 0) {
     item.share = {
@@ -69,7 +73,9 @@ export class Space extends DurableObject<Env> {
 				share_token TEXT,
 				share_active INTEGER NOT NULL DEFAULT 0,
 				share_max_downloads INTEGER,
-				share_downloads INTEGER NOT NULL DEFAULT 0
+				share_downloads INTEGER NOT NULL DEFAULT 0,
+				filename TEXT,
+				suffix TEXT
 			)
 		`);
     // idempotent in-place migration for DO instances created before a column existed
@@ -94,6 +100,9 @@ export class Space extends DurableObject<Env> {
       ctx.storage.sql.exec(
         "ALTER TABLE items ADD COLUMN share_downloads INTEGER NOT NULL DEFAULT 0",
       );
+    if (!columns.has("filename"))
+      ctx.storage.sql.exec("ALTER TABLE items ADD COLUMN filename TEXT");
+    if (!columns.has("suffix")) ctx.storage.sql.exec("ALTER TABLE items ADD COLUMN suffix TEXT");
     ctx.storage.sql.exec("CREATE INDEX IF NOT EXISTS items_created_at ON items(created_at)");
     ctx.storage.sql.exec("CREATE INDEX IF NOT EXISTS items_share_token ON items(share_token)");
     ctx.setWebSocketAutoResponse(new WebSocketRequestResponsePair(WS_PING, WS_PONG));
@@ -132,15 +141,17 @@ export class Space extends DurableObject<Env> {
     };
   }
 
-  async create(id: string, text: string): Promise<Item> {
+  async create(id: string, text: string, filename?: string, suffix?: string): Promise<Item> {
     const now = Date.now();
     const rows = this.ctx.storage.sql
       .exec<Row>(
-        `INSERT INTO items (id, text, created_at, updated_at, kind) VALUES (?, ?, ?, ?, 'text') ON CONFLICT(id) DO NOTHING RETURNING ${SELECT_COLUMNS}`,
+        `INSERT INTO items (id, text, created_at, updated_at, kind, filename, suffix) VALUES (?, ?, ?, ?, 'text', ?, ?) ON CONFLICT(id) DO NOTHING RETURNING ${SELECT_COLUMNS}`,
         id,
         text,
         now,
         now,
+        filename ?? null,
+        suffix ?? null,
       )
       .toArray();
     // duplicate id: the conflicting row already exists, re-read it for an idempotent response

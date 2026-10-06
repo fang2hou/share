@@ -97,6 +97,37 @@ describe("items api", () => {
     expect(list.items.map((i) => i.id)).toEqual([id]);
   });
 
+  it("stores optional filename and suffix, and validates them", async () => {
+    const cookie = await sessionCookie("2");
+    const id = crypto.randomUUID();
+    const post = await SELF.fetch(BASE + "/api/items", {
+      method: "POST",
+      headers: { Cookie: cookie, Origin: ORIGIN },
+      body: JSON.stringify({ id, text: "int main() {}", filename: "demo", suffix: "CPP" }),
+    });
+    expect(post.status).toBe(201);
+    const created = (await post.json()) as CreatedItem;
+    expect(created.item.filename).toBe("demo");
+    expect(created.item.suffix).toBe("cpp"); // normalized to lowercase
+
+    const badSuffix = await SELF.fetch(BASE + "/api/items", {
+      method: "POST",
+      headers: { Cookie: cookie, Origin: ORIGIN },
+      body: JSON.stringify({ id: crypto.randomUUID(), text: "x", suffix: "../etc" }),
+    });
+    expect(badSuffix.status).toBe(400);
+
+    const badFilename = await SELF.fetch(BASE + "/api/items", {
+      method: "POST",
+      headers: { Cookie: cookie, Origin: ORIGIN },
+      body: JSON.stringify({ id: crypto.randomUUID(), text: "x", filename: "a/b" }),
+    });
+    expect(badFilename.status).toBe(400);
+
+    const suffixOnly = await postItem(cookie, crypto.randomUUID(), "print('hi')");
+    expect(suffixOnly.status).toBe(201);
+  });
+
   it("paginates with a created-at cursor", async () => {
     const cookie = await sessionCookie("3");
     // controlled timestamps: page-item-0 newest, page-item-2 oldest

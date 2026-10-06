@@ -57,6 +57,11 @@ export type Messages = {
   placeholderPlain: string;
   changeLanguage: string;
   confirmDeleteKeys: string;
+  filenamePlaceholder: string;
+  suffixPlaceholder: string;
+  searchSuffix: string;
+  noSuffixMatches: string;
+  clearSuffix: string;
 };
 
 export const messages: Record<Lang, Messages> = {
@@ -105,6 +110,11 @@ export const messages: Record<Lang, Messages> = {
     placeholderPlain: "输入文字",
     changeLanguage: "切换语言",
     confirmDeleteKeys: "再按一次 {keys} 删除",
+    filenamePlaceholder: "文件名（可选）",
+    suffixPlaceholder: "后缀（可选）",
+    searchSuffix: "搜索语言或后缀…",
+    noSuffixMatches: "没有匹配的语言",
+    clearSuffix: "清除后缀",
   },
   "zh-TW": {
     placeholder: "輸入文字，{saveKeys} 傳送",
@@ -151,6 +161,11 @@ export const messages: Record<Lang, Messages> = {
     placeholderPlain: "輸入文字",
     changeLanguage: "切換語言",
     confirmDeleteKeys: "再按一次 {keys} 刪除",
+    filenamePlaceholder: "檔名（可選）",
+    suffixPlaceholder: "後綴（可選）",
+    searchSuffix: "搜尋語言或後綴…",
+    noSuffixMatches: "沒有匹配的語言",
+    clearSuffix: "清除後綴",
   },
   ja: {
     placeholder: "テキストを入力（{saveKeys} で送信）",
@@ -197,6 +212,11 @@ export const messages: Record<Lang, Messages> = {
     placeholderPlain: "テキストを入力",
     changeLanguage: "言語を変更",
     confirmDeleteKeys: "{keys} をもう一度押して削除",
+    filenamePlaceholder: "ファイル名（任意）",
+    suffixPlaceholder: "拡張子（任意）",
+    searchSuffix: "言語や拡張子を検索…",
+    noSuffixMatches: "一致する言語がありません",
+    clearSuffix: "拡張子をクリア",
   },
   ko: {
     placeholder: "텍스트 입력 ({saveKeys} 전송)",
@@ -243,6 +263,11 @@ export const messages: Record<Lang, Messages> = {
     placeholderPlain: "텍스트 입력",
     changeLanguage: "언어 변경",
     confirmDeleteKeys: "{keys}를 다시 눌러 삭제",
+    filenamePlaceholder: "파일명(선택)",
+    suffixPlaceholder: "확장자(선택)",
+    searchSuffix: "언어 또는 확장자 검색…",
+    noSuffixMatches: "일치하는 언어가 없습니다",
+    clearSuffix: "확장자 지우기",
   },
   en: {
     placeholder: "Type here — {saveKeys} to send",
@@ -289,5 +314,10 @@ export const messages: Record<Lang, Messages> = {
     placeholderPlain: "Type here",
     changeLanguage: "Change language",
     confirmDeleteKeys: "Press {keys} again to delete",
+    filenamePlaceholder: "Filename (optional)",
+    suffixPlaceholder: "Suffix (optional)",
+    searchSuffix: "Search languages or suffixes…",
+    noSuffixMatches: "No matching languages",
+    clearSuffix: "Clear suffix",
   },
 };

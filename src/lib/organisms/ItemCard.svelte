@@ -17,6 +17,8 @@
   import { formatFileSize } from "#lib/format.js";
   import { copyText } from "#lib/clipboard.js";
   import { keys } from "#lib/kbd.js";
+  import { findLanguage } from "#lib/languages.js";
+  import { highlightCode } from "#lib/highlight.js";
 
   let {
     item,
@@ -28,6 +30,8 @@
     onShare,
     onDelete,
     register,
+    confirmDelete = false,
+    onDismissConfirm = () => {},
   }: {
     item: Item;
     now: number;
@@ -38,6 +42,8 @@
     onShare: (active: boolean, maxDownloads: number | null) => Promise<boolean>;
     onDelete: () => Promise<boolean>;
     register?: (id: string, api: CardApi) => () => void;
+    confirmDelete?: boolean;
+    onDismissConfirm?: () => void;
   } = $props();
 
   let editing = $state(false);
@@ -47,6 +53,35 @@
   let copyState = $state<"idle" | "ok" | "fail">("idle");
   let resetCopyId: number | undefined;
   let shareOpen = $state(false);
+  let highlighted = $state("");
+
+  const codeLang = $derived(findLanguage(item.kind === "text" ? item.suffix : null));
+
+  // (re)highlight whenever the text or language changes; plain text while loading
+  $effect(() => {
+    const lang = codeLang;
+    const text = item.text;
+    if (!lang) return;
+    let alive = true;
+    void highlightCode(text, lang).then((html) => {
+      if (alive) highlighted = html;
+    });
+    return () => {
+      alive = false;
+    };
+  });
+
+  function download(): void {
+    if (!item.filename) return;
+    const name = item.suffix ? `${item.filename}.${item.suffix}` : item.filename;
+    const blob = new Blob([item.text], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = name;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
 
   function startEdit(): void {
     draft = item.text;
@@ -105,7 +140,7 @@
 
 <article
   data-card-id={item.id}
-  class="squircle rounded-2xl border border-stone-200/80 bg-white p-4 shadow-sm transition-opacity {pending
+  class="squircle relative rounded-2xl border border-stone-200/80 bg-white p-4 shadow-sm transition-opacity {pending
     ? 'opacity-60'
     : ''}"
 >
@@ -136,22 +171,41 @@
           <button
             onclick={() => void save()}
             disabled={saving}
-            class="squircle rounded-lg bg-stone-900 px-4 py-2 text-sm font-semibold text-white transition-colors disabled:opacity-60"
+            class="rounded-lg bg-stone-900 px-4 py-2 text-sm font-semibold text-white transition-colors disabled:opacity-60"
           >
             {m.save}
           </button>
           <button
             onclick={() => (editing = false)}
-            class="squircle rounded-lg px-4 py-2 text-sm font-medium text-stone-500 transition-colors hover:text-stone-900"
+            class="rounded-lg px-4 py-2 text-sm font-medium text-stone-500 transition-colors hover:text-stone-900"
           >
             {m.cancel}
           </button>
         </div>
       {:else}
         <CardMeta {now} {lang} createdAt={item.createdAt} />
-        <p class="mt-2 text-base leading-relaxed break-words whitespace-pre-wrap text-stone-800">
-          {item.text}
-        </p>
+        {#if codeLang}
+          <div class="mt-2 overflow-hidden rounded-lg border border-stone-200">
+            <div
+              class="flex items-center justify-between border-b border-stone-200 bg-stone-100/70 py-1 pr-2.5 pl-3"
+            >
+              <span class="text-[11px] font-semibold tracking-wide text-stone-500 uppercase">
+                {codeLang.name}
+              </span>
+              {#if item.filename}
+                <span class="code-font truncate text-xs text-stone-400">
+                  {item.filename}{item.suffix ? `.${item.suffix}` : ""}
+                </span>
+              {/if}
+            </div>
+            <pre
+              class="code-font scroll-autohide hljs overflow-x-auto bg-stone-50 p-3 text-[13px] leading-relaxed text-stone-800">{#if highlighted}{@html highlighted}{:else}{item.text}{/if}</pre>
+          </div>
+        {:else}
+          <p class="mt-2 text-base leading-relaxed break-words whitespace-pre-wrap text-stone-800">
+            {item.text}
+          </p>
+        {/if}
       {/if}
     </div>
 
@@ -187,9 +241,11 @@
           <ActionMenu
             {m}
             showEdit={item.kind === "text"}
+            showDownload={item.kind === "text" && !!item.filename}
             shareActive={item.share?.active === true}
             onShare={() => (shareOpen = !shareOpen)}
             onEdit={startEdit}
+            onDownload={download}
             {onDelete}
           />
         {/if}
@@ -199,5 +255,19 @@
 
   {#if !editing && !pending && shareOpen}
     <SharePanel {item} {m} {onShare} />
+  {/if}
+
+  {#if confirmDelete}
+    <div
+      role="presentation"
+      class="squircle absolute inset-0 z-10 flex flex-col items-center justify-center gap-1 rounded-2xl bg-white/85 backdrop-blur-[2px]"
+      onclick={onDismissConfirm}
+      onkeydown={(e) => e.key === "Escape" && onDismissConfirm()}
+    >
+      <p class="px-4 text-center text-base font-medium text-red-600">
+        {m.confirmDeleteKeys.replaceAll("{keys}", keys.del)}
+      </p>
+      <p class="kbd-hint text-xs text-stone-400">{keys.esc} · {m.cancel}</p>
+    </div>
   {/if}
 </article>

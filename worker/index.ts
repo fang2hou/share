@@ -1,10 +1,12 @@
 import { handleCallback, loginRedirect, originAllowed, readSession } from "./auth.ts";
 import {
+  FILENAME_PATTERN,
   ID_PATTERN,
   MAX_BODY_BYTES,
   MAX_FILE_BYTES,
   MAX_TEXT_LENGTH,
   SHARE_TOKEN_PATTERN,
+  SUFFIX_PATTERN,
 } from "../shared/protocol.ts";
 import type { Item } from "../shared/protocol.ts";
 import { messages, pickLang, type Lang } from "../shared/i18n.ts";
@@ -84,6 +86,20 @@ function validateText(value: unknown): string | null {
   return text;
 }
 
+function validateFilename(value: unknown): string | null | false {
+  if (value === undefined || value === null) return null;
+  if (typeof value !== "string") return false;
+  const name = value.trim();
+  return FILENAME_PATTERN.test(name) ? name : false;
+}
+
+function validateSuffix(value: unknown): string | null | false {
+  if (value === undefined || value === null) return null;
+  if (typeof value !== "string") return false;
+  const suffix = value.trim().toLowerCase();
+  return SUFFIX_PATTERN.test(suffix) ? suffix : false;
+}
+
 async function api(request: Request, env: Env, url: URL): Promise<Response> {
   const session = await readSession(request, env);
   if (!session) return jsonError("unauthorized", 401);
@@ -117,7 +133,14 @@ async function api(request: Request, env: Env, url: URL): Promise<Response> {
         return jsonError("bad_request", 400);
       const text = validateText(body.text);
       if (text === null) return jsonError("bad_request", 400);
-      return Response.json({ item: await stub.create(body.id, text) }, { status: 201 });
+      const filename = validateFilename(body.filename);
+      if (filename === false) return jsonError("bad_request", 400);
+      const suffix = validateSuffix(body.suffix);
+      if (suffix === false) return jsonError("bad_request", 400);
+      return Response.json(
+        { item: await stub.create(body.id, text, filename ?? undefined, suffix ?? undefined) },
+        { status: 201 },
+      );
     }
     return jsonError("method_not_allowed", 405);
   }

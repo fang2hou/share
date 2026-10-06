@@ -4,6 +4,9 @@ export const MAX_FILE_BYTES = 75 * 1024 * 1024;
 export const PAGE_SIZE = 50;
 export const ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 export const SHARE_TOKEN_PATTERN = /^[A-Za-z0-9_-]{22,43}$/;
+// optional snippet metadata: a display filename and/or a language suffix; both nullable
+export const FILENAME_PATTERN = /^[^\\/:*?"<>|]{1,64}$/;
+export const SUFFIX_PATTERN = /^[a-z][a-z0-9+#-]{0,15}$/;
 
 export type ShareState = {
   active: boolean;
@@ -23,6 +26,10 @@ export type Item = {
   kind: "text" | "file";
   fileName?: string;
   fileSize?: number;
+  /** text snippets only: optional download filename */
+  filename?: string;
+  /** text snippets only: optional language suffix, e.g. "cpp" */
+  suffix?: string;
   share?: ShareState;
 };
 export type Bootstrap = { items: Item[]; hasMore: boolean };
