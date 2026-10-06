@@ -10,7 +10,7 @@
 </script>
 
 <article
-  class="flex gap-3 rounded-2xl border border-stone-200/80 bg-white p-4 shadow-sm opacity-80"
+  class="squircle flex gap-3 rounded-2xl border border-stone-200/80 bg-white p-4 shadow-sm opacity-80"
 >
   <div class="min-w-0 flex-1">
     <div class="flex items-baseline gap-2">
