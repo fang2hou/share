@@ -1,0 +1,4 @@
+GITHUB_CLIENT_ID=dev-placeholder
+GITHUB_CLIENT_SECRET=dev-placeholder
+SESSION_SECRET=dev-placeholder
+APP_ORIGIN=http://localhost:5173

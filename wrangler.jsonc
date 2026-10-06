@@ -1,0 +1,19 @@
+{
+	"$schema": "./node_modules/wrangler/config-schema.json",
+	"name": "share",
+	"workers_dev": false,
+	"main": "worker/index.ts",
+	"compatibility_date": "2026-10-01",
+	"routes": [{ "pattern": "share.fang2hou.com", "custom_domain": true }],
+	"assets": {
+		"directory": "./build",
+		"binding": "ASSETS",
+		"not_found_handling": "none",
+		"run_worker_first": ["/", "/api/*", "/auth/*"]
+	},
+	"durable_objects": { "bindings": [{ "name": "SPACE", "class_name": "Space" }] },
+	"r2_buckets": [{ "binding": "FILES", "bucket_name": "share-files" }],
+	"migrations": [{ "tag": "v1", "new_sqlite_classes": ["Space"] }],
+	"vars": { "APP_ORIGIN": "" },
+	"observability": { "enabled": true, "traces": { "enabled": true } }
+}
