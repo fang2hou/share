@@ -5,6 +5,7 @@ export class SpaceStore {
 	pending = $state<Item[]>([]);
 	uploads = $state<{ id: string; name: string; size: number; progress: number }[]>([]);
 	status = $state<'connecting' | 'live' | 'reconnecting'>('connecting');
+	hasMore = $state(false);
 
 	#ws: WebSocket | null = null;
 	#heartbeatId: number | undefined;
@@ -31,9 +32,9 @@ export class SpaceStore {
 		if (el) {
 			el.remove();
 			try {
-				const data = JSON.parse(el.textContent ?? '') as { items?: unknown };
-				if (Array.isArray(data.items)) this.applySnapshot(data.items as Item[]);
-				else void this.refresh();
+			const data = JSON.parse(el.textContent ?? '') as { items?: unknown; hasMore?: boolean };
+			if (Array.isArray(data.items)) this.applySnapshot(data.items as Item[], data.hasMore === true);
+			else void this.refresh();
 			} catch {
 				void this.refresh();
 			}
@@ -43,8 +44,9 @@ export class SpaceStore {
 		document.addEventListener('visibilitychange', this.#onVisibility);
 	}
 
-	applySnapshot(items: Item[]): void {
+	applySnapshot(items: Item[], hasMore = this.hasMore): void {
 		this.items = [...items].sort((a, b) => b.createdAt - a.createdAt);
+		this.hasMore = hasMore;
 		const ids = new Set(items.map((i) => i.id));
 		this.pending = this.pending.filter((p) => !ids.has(p.id));
 	}
@@ -75,10 +77,43 @@ export class SpaceStore {
 				return;
 			}
 			if (res.status !== 200) return;
-			const data = (await res.json()) as { items?: unknown };
-			if (Array.isArray(data.items)) this.applySnapshot(data.items as Item[]);
+			const data = (await res.json()) as { items?: unknown; hasMore?: boolean };
+			if (Array.isArray(data.items)) this.applySnapshot(data.items as Item[], data.hasMore === true);
 		} catch {
 			// keep whatever state we already have
+		}
+	}
+
+	// cursor pagination: pull the page older than the oldest loaded item
+	async loadOlder(): Promise<void> {
+		if (!this.hasMore || this.items.length === 0) return;
+		const before = this.items[this.items.length - 1].createdAt;
+		try {
+			const res = await fetch('/api/items?before=' + before);
+			if (res.status !== 200) return;
+			const data = (await res.json()) as { items?: unknown; hasMore?: boolean };
+			if (!Array.isArray(data.items)) return;
+			const incoming = data.items as Item[];
+			this.hasMore = data.hasMore === true;
+			for (const item of incoming) this.upsert(item);
+		} catch {
+			// pagination is best-effort; the button stays available
+		}
+	}
+
+	async setShare(id: string, active: boolean, maxDownloads: number | null): Promise<boolean> {
+		try {
+			const res = await fetch('/api/items/' + id + '/share', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ active, maxDownloads })
+			});
+			if (res.status !== 200) return false;
+			const data = (await res.json()) as { item: Item };
+			this.upsert(data.item);
+			return true;
+		} catch {
+			return false;
 		}
 	}
 
@@ -222,7 +257,7 @@ export class SpaceStore {
 	#dispatch(raw: unknown): void {
 		try {
 			const msg = JSON.parse(raw as string) as ServerMessage;
-			if (msg.type === 'snapshot') this.applySnapshot(msg.items);
+			if (msg.type === 'snapshot') this.applySnapshot(msg.items, msg.hasMore);
 			else if (msg.type === 'upsert') this.upsert(msg.item);
 			else if (msg.type === 'remove') this.remove(msg.ids);
 		} catch {

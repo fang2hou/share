@@ -32,6 +32,14 @@ export type Messages = {
 	uploadFailed: string;
 	fileTooLarge: string;
 	uploading: string;
+	share: string;
+	shareOn: string;
+	shareOff: string;
+	limitLabel: string;
+	unlimited: string;
+	loadOlder: string;
+	items: string;
+	shareViewTitle: string;
 };
 
 export const messages: Record<Lang, Messages> = {
@@ -57,6 +65,14 @@ export const messages: Record<Lang, Messages> = {
 		uploadFailed: '上传失败',
 		fileTooLarge: '文件超过 75MB 上限',
 		uploading: '上传中',
+		share: '分享',
+		shareOn: '开启外链',
+		shareOff: '关闭外链',
+		limitLabel: '次数限制',
+		unlimited: '不限',
+		loadOlder: '加载更早',
+		items: '条',
+		shareViewTitle: '分享的内容',
 	},
 	ja: {
 		placeholder: 'テキストを入力（Shift+Enter で送信）',
@@ -80,6 +96,14 @@ export const messages: Record<Lang, Messages> = {
 		uploadFailed: 'アップロードに失敗しました',
 		fileTooLarge: 'ファイルが 75MB の上限を超えています',
 		uploading: 'アップロード中',
+		share: '共有',
+		shareOn: 'リンクを有効化',
+		shareOff: 'リンクを無効化',
+		limitLabel: '回数制限',
+		unlimited: '無制限',
+		loadOlder: 'さらに読み込む',
+		items: '件',
+		shareViewTitle: '共有されたテキスト',
 	},
 	en: {
 		placeholder: 'Type here — Shift+Enter to send',
@@ -103,5 +127,13 @@ export const messages: Record<Lang, Messages> = {
 		uploadFailed: 'Upload failed',
 		fileTooLarge: 'File exceeds the 75MB limit',
 		uploading: 'Uploading',
+		share: 'Share',
+		shareOn: 'Enable link',
+		shareOff: 'Disable link',
+		limitLabel: 'Max downloads',
+		unlimited: 'Unlimited',
+		loadOlder: 'Load older',
+		items: 'items',
+		shareViewTitle: 'Shared text',
 	}
 };

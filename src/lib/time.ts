@@ -31,3 +31,28 @@ export function absoluteTime(ts: number, lang: Lang): string {
 	}
 	return dtf.format(ts);
 }
+
+const dayKeyFmt = new Intl.DateTimeFormat('en-CA', {
+	year: 'numeric',
+	month: '2-digit',
+	day: '2-digit'
+});
+const dayLabelCache = new Map<Lang, Intl.DateTimeFormat>();
+
+// local calendar day key (YYYY-MM-DD) — grouping boundary is the viewer's own timezone
+export function dayKey(ts: number): string {
+	return dayKeyFmt.format(ts);
+}
+
+export function dayLabel(ts: number, lang: Lang): string {
+	let dtf = dayLabelCache.get(lang);
+	if (!dtf) {
+		dtf = new Intl.DateTimeFormat(lang, { month: 'long', day: 'numeric', weekday: 'short' });
+		dayLabelCache.set(lang, dtf);
+	}
+	return dtf.format(ts);
+}
+
+export function dayKeyOffset(now: number, days: number): string {
+	return dayKey(now - days * 86_400_000);
+}
