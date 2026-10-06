@@ -30,9 +30,15 @@
 
 ## Deploying
 
-1. One-time setup: `wrangler r2 bucket create share-files`; `wrangler secret put GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, `SESSION_SECRET`; set the OAuth app's Redirect URI to `https://share.fang2hou.com/auth/callback`.
-2. `mise run deploy`.
-3. After changing any binding in `wrangler.jsonc`, run `pnpm cf-typegen` and commit the regenerated `worker-configuration.d.ts`.
+Deployments happen in CI, never from a local machine. The Deploy job in `.github/workflows/ci.yml` runs after Validate and Validate commit history pass on every push to `main` — in practice: open a PR, let validation pass, merge (squash), and the worker deploys automatically to https://share.fang2hou.com.
+
+One-time setup (already done):
+
+1. Cloudflare API token `share-github-actions-deploy` (Edit Cloudflare Workers template, scoped to account `fang2hou` + zone `fang2hou.com`), stored as the `CLOUDFLARE_API_TOKEN` repo secret; account id as `CLOUDFLARE_ACCOUNT_ID`.
+2. Worker secrets: `wrangler secret put GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, `SESSION_SECRET`; OAuth app Redirect URI `https://share.fang2hou.com/auth/callback`.
+3. R2 bucket `share-files`.
+
+After changing any binding in `wrangler.jsonc`, run `pnpm cf-typegen` and commit the regenerated `worker-configuration.d.ts`. `mise run deploy` still exists for emergencies and requires a Cloudflare login.
 
 ## Verification
 
