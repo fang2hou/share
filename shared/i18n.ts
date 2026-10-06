@@ -1,10 +1,12 @@
-export type Lang = "zh-CN" | "ja" | "en";
+export type Lang = "zh-CN" | "zh-TW" | "ja" | "ko" | "en";
 
 export function pickLang(tags: readonly string[]): Lang {
   for (const tag of tags) {
     const t = tag.toLowerCase();
+    if (t === "zh-tw" || t === "zh-hk" || t === "zh-mo" || t.startsWith("zh-hant")) return "zh-TW";
     if (t.startsWith("zh")) return "zh-CN";
     if (t.startsWith("ja")) return "ja";
+    if (t.startsWith("ko")) return "ko";
     if (t.startsWith("en")) return "en";
   }
   return "en";
@@ -86,6 +88,43 @@ export const messages: Record<Lang, Messages> = {
     modeText: "文字模式",
     modeFiles: "文件模式",
   },
+  "zh-TW": {
+    placeholder: "輸入文字，Shift+Enter 傳送",
+    copy: "複製",
+    copied: "已複製",
+    copyFailed: "複製失敗",
+    edit: "編輯",
+    save: "儲存",
+    cancel: "取消",
+    editHint: "Shift+Enter 儲存 · Esc 取消",
+    sendFailed: "傳送失敗，內容已放回輸入框",
+    saveFailed: "儲存失敗",
+    justNow: "剛剛",
+    empty: "還沒有內容",
+    reconnecting: "連線中斷，正在重新連線…",
+    loginFailed: "GitHub 登入失敗。",
+    retry: "重試",
+    dropHint: "拖放、貼上或點擊選擇檔案",
+    dropHere: "放開以上傳檔案",
+    download: "下載",
+    uploadFailed: "上傳失敗",
+    fileTooLarge: "檔案超過 75MB 上限",
+    uploading: "上傳中",
+    share: "分享",
+    shareOn: "開啟連結",
+    shareOff: "關閉連結",
+    limitLabel: "次數上限",
+    unlimited: "不限",
+    loadOlder: "載入更早",
+    items: "筆",
+    shareViewTitle: "分享的內容",
+    more: "更多操作",
+    delete: "刪除",
+    confirmDelete: "再點一次確認",
+    deleteFailed: "刪除失敗",
+    modeText: "文字模式",
+    modeFiles: "檔案模式",
+  },
   ja: {
     placeholder: "テキストを入力（Shift+Enter で送信）",
     copy: "コピー",
@@ -122,6 +161,43 @@ export const messages: Record<Lang, Messages> = {
     deleteFailed: "削除に失敗しました",
     modeText: "テキストモード",
     modeFiles: "ファイルモード",
+  },
+  ko: {
+    placeholder: "텍스트 입력 (Shift+Enter로 전송)",
+    copy: "복사",
+    copied: "복사됨",
+    copyFailed: "복사 실패",
+    edit: "편집",
+    save: "저장",
+    cancel: "취소",
+    editHint: "Shift+Enter 저장 · Esc 취소",
+    sendFailed: "전송 실패 — 입력란에 복원했습니다",
+    saveFailed: "저장 실패",
+    justNow: "방금",
+    empty: "아직 내용이 없습니다",
+    reconnecting: "연결이 끊겼습니다. 다시 연결하는 중…",
+    loginFailed: "GitHub 로그인에 실패했습니다.",
+    retry: "다시 시도",
+    dropHint: "드래그 앤 드롭, 붙여넣기 또는 클릭으로 파일 선택",
+    dropHere: "놓아서 파일 업로드",
+    download: "다운로드",
+    uploadFailed: "업로드 실패",
+    fileTooLarge: "파일이 75MB 제한을 초과했습니다",
+    uploading: "업로드 중",
+    share: "공유",
+    shareOn: "링크 활성화",
+    shareOff: "링크 비활성화",
+    limitLabel: "최대 횟수",
+    unlimited: "무제한",
+    loadOlder: "이전 내용 불러오기",
+    items: "개",
+    shareViewTitle: "공유된 내용",
+    more: "기타 작업",
+    delete: "삭제",
+    confirmDelete: "한 번 더 눌러 확인",
+    deleteFailed: "삭제 실패",
+    modeText: "텍스트 모드",
+    modeFiles: "파일 모드",
   },
   en: {
     placeholder: "Type here — Shift+Enter to send",

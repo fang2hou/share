@@ -3,26 +3,172 @@
 
   let { lang, onPick }: { lang: Lang; onPick: (lang: Lang) => void } = $props();
 
-  const LANGS: { id: Lang; label: string }[] = [
-    { id: "zh-CN", label: "简体中文" },
-    { id: "ja", label: "日本語" },
-    { id: "en", label: "English" },
+  const LANGS: { id: Lang; short: string; full: string }[] = [
+    { id: "zh-CN", short: "简", full: "简体中文" },
+    { id: "zh-TW", short: "繁", full: "繁體中文" },
+    { id: "ja", short: "日", full: "日本語" },
+    { id: "ko", short: "한", full: "한국어" },
+    { id: "en", short: "En", full: "English" },
   ];
+
+  let nav = $state<HTMLElement | undefined>();
+
+  // the thumb slides under whichever button is selected, following width changes
+  // as the strip collapses (short label) and expands (full labels on hover)
+  $effect(() => {
+    if (!nav) return;
+    const selected = nav.querySelector<HTMLButtonElement>(`[data-lang="${lang}"]`);
+    if (!selected) return;
+    const place = () => {
+      nav?.style.setProperty("--thumb-left", `${selected.offsetLeft}px`);
+      nav?.style.setProperty("--thumb-width", `${selected.offsetWidth}px`);
+    };
+    place();
+    const observer = new ResizeObserver(place);
+    observer.observe(selected);
+    observer.observe(nav);
+    return () => observer.disconnect();
+  });
 </script>
 
-<nav
-  class="flex rounded-full border border-stone-200/80 bg-white p-0.5 shadow-sm"
-  aria-label="Language / 语言 / 言語"
->
+<nav bind:this={nav} class="langnav" aria-label="Language / 语言 / 言語 / 언어">
+  <span class="thumb" aria-hidden="true"></span>
   {#each LANGS as l (l.id)}
     <button
+      type="button"
+      data-lang={l.id}
       onclick={() => onPick(l.id)}
       aria-pressed={lang === l.id}
-      class="rounded-full px-3 py-1 text-xs font-medium transition-colors {lang === l.id
-        ? 'bg-stone-900 text-white'
-        : 'text-stone-500 hover:text-stone-900'}"
+      title={l.full}
+      class="langbtn {lang === l.id ? 'is-selected' : ''}"
     >
-      {l.label}
+      {#if lang === l.id}
+        <span class="short">{l.short}</span>
+      {/if}
+      <span class="full">{l.full}</span>
     </button>
   {/each}
 </nav>
+
+<style>
+  .langnav {
+    position: relative;
+    display: flex;
+    align-items: center;
+    padding: 0.125rem;
+    border-radius: 9999px;
+    border: 1px solid rgb(231 229 228 / 0.8);
+    background: #fff;
+    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  }
+
+  .thumb {
+    position: absolute;
+    top: 0.125rem;
+    bottom: 0.125rem;
+    left: var(--thumb-left, 0.25rem);
+    width: var(--thumb-width, 0px);
+    border-radius: 9999px;
+    background: rgb(28 25 23);
+    transition:
+      left 0.2s ease,
+      width 0.2s ease;
+  }
+
+  .langbtn {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 1.75rem;
+    padding-inline: 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    line-height: 1;
+    font-weight: 500;
+    white-space: nowrap;
+    color: rgb(120 113 108);
+    transition:
+      color 0.2s ease,
+      max-width 0.25s ease,
+      padding-inline 0.25s ease,
+      opacity 0.2s ease,
+      visibility 0s;
+  }
+
+  .langbtn:hover {
+    color: rgb(41 37 36);
+  }
+
+  .langbtn.is-selected {
+    color: #fff;
+  }
+
+  /* collapsed: only the selected language shows, as its short label; hidden
+     buttons stay visible until the collapse animation has finished */
+  .langnav:not(:hover):not(:focus-within) .langbtn:not(.is-selected) {
+    max-width: 0;
+    padding-inline: 0;
+    opacity: 0;
+    visibility: hidden;
+    transition:
+      color 0.2s ease,
+      max-width 0.25s ease,
+      padding-inline 0.25s ease,
+      opacity 0.2s ease,
+      visibility 0s linear 0.25s;
+  }
+
+  /* selected label cross-fades short -> full as the strip expands */
+  .langbtn > .short,
+  .langbtn > .full {
+    overflow: hidden;
+    transition:
+      max-width 0.25s ease,
+      opacity 0.15s ease;
+  }
+
+  .langbtn > .short {
+    max-width: 3em;
+  }
+
+  .langbtn > .full {
+    max-width: 0;
+    opacity: 0;
+  }
+
+  .langnav:hover .langbtn > .full,
+  .langnav:focus-within .langbtn > .full {
+    max-width: 7em;
+    opacity: 1;
+    transition-delay: 0.05s;
+  }
+
+  .langnav:hover .langbtn > .short,
+  .langnav:focus-within .langbtn > .short {
+    max-width: 0;
+    opacity: 0;
+  }
+
+  /* devices without hover: stay expanded with full labels */
+  @media (hover: none) {
+    .langbtn > .short {
+      display: none;
+    }
+
+    .langbtn > .full {
+      max-width: 7em;
+      opacity: 1;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .thumb,
+    .langbtn,
+    .langbtn > .short,
+    .langbtn > .full {
+      transition-duration: 0.01ms;
+    }
+  }
+</style>

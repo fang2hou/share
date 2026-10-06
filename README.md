@@ -46,7 +46,7 @@ Open http://localhost:5173 and sign in with GitHub. `mise run` lists every other
 - **Share links** — per-item public URLs (`/f/<sub>.<token>`) that work without login; optional download budget; revoke anytime
 - **Day grouping** — today and yesterday expanded, older days collapsed, history loads on demand
 - **Permanent retention** — items stay until you remove them
-- **Trilingual UI** — zh-CN / ja / en, follows the browser language with a manual switch
+- **Five-language UI** — 简体中文 / 繁體中文 / 日本語 / 한국어 / English, follows the browser language with a manual switch
 
 ## ⚡ Performance
 

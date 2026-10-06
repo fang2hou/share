@@ -58,7 +58,7 @@
 
 {#if mode === "text"}
   <div
-    class="rounded-2xl border border-stone-300/90 bg-white shadow-sm transition focus-within:border-stone-500 focus-within:ring-4 focus-within:ring-orange-500/15"
+    class="vt-composer rounded-2xl border border-stone-300/90 bg-white shadow-sm transition focus-within:border-stone-500 focus-within:ring-4 focus-within:ring-orange-500/15"
   >
     <!-- svelte-ignore a11y_autofocus -->
     <textarea
@@ -74,7 +74,7 @@
   </div>
 {:else}
   <label
-    class="flex min-h-40 cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-stone-300 bg-white shadow-sm py-8 text-stone-400 transition-colors hover:border-orange-400 hover:text-stone-600"
+    class="vt-composer flex min-h-40 cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-stone-300 bg-white shadow-sm py-8 text-stone-400 transition-colors hover:border-orange-400 hover:text-stone-600"
   >
     <Icon name="paperclip" size={28} />
     <span class="text-sm font-medium">{m.dropHint}</span>
