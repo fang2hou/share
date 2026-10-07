@@ -141,7 +141,7 @@
           class="h-8 w-full rounded bg-stone-100 px-2.5 text-sm text-stone-800 placeholder:text-stone-400 focus:outline-none"
         />
       </div>
-      <ul class="max-h-64 overflow-y-auto p-1">
+      <ul class="max-h-64 overflow-y-auto px-1 pt-1 pb-2">
         {#each filtered as entry, i (entry.suffix)}
           <li>
             <button
