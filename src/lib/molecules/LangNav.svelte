@@ -74,6 +74,34 @@
     clearTimeout(settleId);
     settleId = setTimeout(() => (tracking = false), 350);
   }
+
+  // clicking a language leaves the button focused, and :focus-within keeps the
+  // strip expanded after the pointer leaves. Drop pointer-acquired focus half
+  // a second after hover-out so the strip shrinks on its own; keyboard focus
+  // (tabbing) is never blurred.
+  let focusFromPointer = false;
+  let collapseId: number | undefined;
+
+  function onEnter(): void {
+    trackLive();
+    clearTimeout(collapseId);
+  }
+
+  function onLeave(): void {
+    trackLive();
+    clearTimeout(collapseId);
+    collapseId = setTimeout(() => {
+      if (!focusFromPointer) return;
+      focusFromPointer = false;
+      (nav?.querySelector(":focus") as HTMLElement | null)?.blur();
+    }, 500);
+  }
+
+  $effect(() => {
+    return () => {
+      clearTimeout(collapseId);
+    };
+  });
 </script>
 
 <svelte:window onclick={onWindowClick} onkeydown={onWindowKeydown} />
@@ -83,8 +111,9 @@
   class="langnav"
   class:tracking
   class:open
-  onpointerenter={trackLive}
-  onpointerleave={trackLive}
+  onpointerenter={onEnter}
+  onpointerleave={onLeave}
+  onpointerdown={() => (focusFromPointer = true)}
   onfocusin={trackLive}
   onfocusout={trackLive}
 >

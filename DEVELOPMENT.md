@@ -4,6 +4,9 @@
 
 1. `mise install && pnpm install` to bootstrap the toolchain.
 2. Copy `.dev.vars` from `.dev.vars.example` and fill in `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET` (GitHub → Settings → Developer settings → OAuth Apps), `SESSION_SECRET` (`openssl rand -base64 32`), and `APP_ORIGIN=http://localhost:5173`.
+
+   With the placeholder `dev-placeholder` credentials left in place, `/auth/login` skips GitHub and issues a local session directly (user `local-dev`), so the full product flow works without an OAuth app. Real credentials always take the real OAuth path.
+
 3. Develop with `mise run dev:worker` plus `mise run dev`. For near-production verification use `pnpm preview` (builds, then serves on 8787 with bootstrap injection active).
 4. Before committing, run `mise run test` — identical to CI: lint, format check, typecheck, tests.
 

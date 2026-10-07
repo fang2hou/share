@@ -1,10 +1,12 @@
 import { handleCallback, loginRedirect, originAllowed, readSession } from "./auth.ts";
 import {
+  FILENAME_PATTERN,
   ID_PATTERN,
   MAX_BODY_BYTES,
   MAX_FILE_BYTES,
   MAX_TEXT_LENGTH,
   SHARE_TOKEN_PATTERN,
+  SUFFIX_PATTERN,
 } from "../shared/protocol.ts";
 import type { Item } from "../shared/protocol.ts";
 import { messages, pickLang, type Lang } from "../shared/i18n.ts";
@@ -84,6 +86,33 @@ function validateText(value: unknown): string | null {
   return text;
 }
 
+// PATCH meta semantics: absent = keep current, null = clear, string = set
+function patchMeta(
+  value: unknown,
+  pattern: RegExp,
+  lower: boolean,
+): string | null | undefined | false {
+  if (value === undefined) return undefined;
+  if (value === null) return null;
+  if (typeof value !== "string") return false;
+  const v = value.trim();
+  return pattern.test(v) ? (lower ? v.toLowerCase() : v) : false;
+}
+
+function validateFilename(value: unknown): string | null | false {
+  if (value === undefined || value === null) return null;
+  if (typeof value !== "string") return false;
+  const filename = value.trim();
+  return FILENAME_PATTERN.test(filename) ? filename : false;
+}
+
+function validateSuffix(value: unknown): string | null | false {
+  if (value === undefined || value === null) return null;
+  if (typeof value !== "string") return false;
+  const suffix = value.trim().toLowerCase();
+  return SUFFIX_PATTERN.test(suffix) ? suffix : false;
+}
+
 async function api(request: Request, env: Env, url: URL): Promise<Response> {
   const session = await readSession(request, env);
   if (!session) return jsonError("unauthorized", 401);
@@ -117,7 +146,14 @@ async function api(request: Request, env: Env, url: URL): Promise<Response> {
         return jsonError("bad_request", 400);
       const text = validateText(body.text);
       if (text === null) return jsonError("bad_request", 400);
-      return Response.json({ item: await stub.create(body.id, text) }, { status: 201 });
+      const filename = validateFilename(body.filename);
+      if (filename === false) return jsonError("bad_request", 400);
+      const suffix = validateSuffix(body.suffix);
+      if (suffix === false) return jsonError("bad_request", 400);
+      return Response.json(
+        { item: await stub.create(body.id, text, filename ?? undefined, suffix ?? undefined) },
+        { status: 201 },
+      );
     }
     return jsonError("method_not_allowed", 405);
   }
@@ -185,7 +221,11 @@ async function api(request: Request, env: Env, url: URL): Promise<Response> {
       if (!body) return jsonError("bad_request", 400);
       const text = validateText(body.text);
       if (text === null) return jsonError("bad_request", 400);
-      const item = await stub.update(itemId, text);
+      const filename = patchMeta(body.filename, FILENAME_PATTERN, false);
+      if (filename === false) return jsonError("bad_request", 400);
+      const suffix = patchMeta(body.suffix, SUFFIX_PATTERN, true);
+      if (suffix === false) return jsonError("bad_request", 400);
+      const item = await stub.update(itemId, text, filename, suffix);
       if (item === null) return jsonError("not_found", 404);
       return Response.json({ item });
     }
@@ -339,7 +379,8 @@ export default {
       request.method === "GET"
     )
       return publicShare(request, env, sharePath[1], sharePath[2]);
-    if (path === "/auth/login" && request.method === "GET") return loginRedirect(request, env);
+    if (path === "/auth/login" && request.method === "GET")
+      return await loginRedirect(request, env);
     if (path === "/auth/callback" && request.method === "GET") return handleCallback(request, env);
     if (path.startsWith("/api/")) return api(request, env, url);
     return env.ASSETS.fetch(request);

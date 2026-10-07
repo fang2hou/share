@@ -54,14 +54,18 @@ export type Messages = {
   clearFiles: string;
   removeFile: string;
   zipNameLabel: string;
-  placeholderPlain: string;
   changeLanguage: string;
   confirmDeleteKeys: string;
+  filenamePlaceholder: string;
+  suffixPlaceholder: string;
+  searchSuffix: string;
+  noSuffixMatches: string;
+  clearSuffix: string;
 };
 
 export const messages: Record<Lang, Messages> = {
   "zh-CN": {
-    placeholder: "输入文字，{saveKeys} 发送",
+    placeholder: "请在这里输入文字",
     copy: "复制",
     copied: "已复制",
     copyFailed: "复制失败",
@@ -102,12 +106,16 @@ export const messages: Record<Lang, Messages> = {
     clearFiles: "清空",
     removeFile: "移除文件",
     zipNameLabel: "打包文件名",
-    placeholderPlain: "输入文字",
     changeLanguage: "切换语言",
     confirmDeleteKeys: "再按一次 {keys} 删除",
+    filenamePlaceholder: "文件名",
+    suffixPlaceholder: "后缀",
+    searchSuffix: "搜索",
+    noSuffixMatches: "没有匹配的语言",
+    clearSuffix: "清除后缀",
   },
   "zh-TW": {
-    placeholder: "輸入文字，{saveKeys} 傳送",
+    placeholder: "請在這裡輸入文字",
     copy: "複製",
     copied: "已複製",
     copyFailed: "複製失敗",
@@ -148,12 +156,16 @@ export const messages: Record<Lang, Messages> = {
     clearFiles: "清空",
     removeFile: "移除檔案",
     zipNameLabel: "壓縮檔名稱",
-    placeholderPlain: "輸入文字",
     changeLanguage: "切換語言",
     confirmDeleteKeys: "再按一次 {keys} 刪除",
+    filenamePlaceholder: "檔名",
+    suffixPlaceholder: "後綴",
+    searchSuffix: "搜尋",
+    noSuffixMatches: "沒有匹配的語言",
+    clearSuffix: "清除後綴",
   },
   ja: {
-    placeholder: "テキストを入力（{saveKeys} で送信）",
+    placeholder: "ここにテキストを入力",
     copy: "コピー",
     copied: "コピー済み",
     copyFailed: "コピー失敗",
@@ -194,12 +206,16 @@ export const messages: Record<Lang, Messages> = {
     clearFiles: "クリア",
     removeFile: "ファイルを削除",
     zipNameLabel: "ZIP ファイル名",
-    placeholderPlain: "テキストを入力",
     changeLanguage: "言語を変更",
     confirmDeleteKeys: "{keys} をもう一度押して削除",
+    filenamePlaceholder: "ファイル名",
+    suffixPlaceholder: "拡張子",
+    searchSuffix: "検索",
+    noSuffixMatches: "一致する言語がありません",
+    clearSuffix: "拡張子をクリア",
   },
   ko: {
-    placeholder: "텍스트 입력 ({saveKeys} 전송)",
+    placeholder: "여기에 텍스트를 입력하세요",
     copy: "복사",
     copied: "복사됨",
     copyFailed: "복사 실패",
@@ -240,12 +256,16 @@ export const messages: Record<Lang, Messages> = {
     clearFiles: "모두 지우기",
     removeFile: "파일 제거",
     zipNameLabel: "ZIP 파일 이름",
-    placeholderPlain: "텍스트 입력",
     changeLanguage: "언어 변경",
     confirmDeleteKeys: "{keys}를 다시 눌러 삭제",
+    filenamePlaceholder: "파일명",
+    suffixPlaceholder: "확장자",
+    searchSuffix: "검색",
+    noSuffixMatches: "일치하는 언어가 없습니다",
+    clearSuffix: "확장자 지우기",
   },
   en: {
-    placeholder: "Type here — {saveKeys} to send",
+    placeholder: "Type your text here",
     copy: "Copy",
     copied: "Copied",
     copyFailed: "Copy failed",
@@ -286,8 +306,12 @@ export const messages: Record<Lang, Messages> = {
     clearFiles: "Clear",
     removeFile: "Remove file",
     zipNameLabel: "ZIP name",
-    placeholderPlain: "Type here",
     changeLanguage: "Change language",
     confirmDeleteKeys: "Press {keys} again to delete",
+    filenamePlaceholder: "Filename",
+    suffixPlaceholder: "Suffix",
+    searchSuffix: "Search",
+    noSuffixMatches: "No matching languages",
+    clearSuffix: "Clear suffix",
   },
 };

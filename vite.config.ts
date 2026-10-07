@@ -14,7 +14,7 @@ export default defineConfig({
       },
       adapter: adapter({ pages: "build", assets: "build", strict: true }),
       inlineStyleThreshold: 100_000,
-      output: { bundleStrategy: "single" },
+      output: { bundleStrategy: "split" },
     }),
   ],
   server: {

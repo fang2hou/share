@@ -13,6 +13,7 @@
   import { SpaceStore } from "#lib/space.svelte.js";
   import { mountFavicon, setFaviconBadge } from "#lib/favicon.js";
   import { dayKey, dayKeyOffset, dayLabel } from "#lib/time.js";
+  import { loadLangFonts } from "#lib/fonts.js";
 
   function initialLang(): Lang {
     const saved = localStorage.getItem("ts_lang");
@@ -24,6 +25,7 @@
   const m = $derived(messages[lang]);
   $effect(() => {
     document.documentElement.lang = lang;
+    void loadLangFonts(lang);
   });
 
   function setLang(next: Lang): void {
@@ -62,13 +64,17 @@
       mode = next;
       return;
     }
-    // direction-aware swap: the composer slides the way the toggle thumb went
+    // direction-aware swap: the composer slides the way the toggle thumb went;
+    // the anim flag scopes the slide to this transition only, so unrelated
+    // view transitions (list sink) leave the composer perfectly still
     document.documentElement.dataset.modeFrom = mode;
-    document.startViewTransition(() =>
+    document.documentElement.dataset.modeAnim = "";
+    const t = document.startViewTransition(() =>
       flushSync(() => {
         mode = next;
       }),
     );
+    t.finished.finally(() => delete document.documentElement.dataset.modeAnim);
   }
 
   const today = $derived(dayKeyOffset(now, 0));
@@ -292,12 +298,22 @@
 >
   <!-- flex-wrap keeps the header safe if the mode switcher ever outgrows a
        viewport; on touch the language picker is a collapsed trigger pill -->
+  <header class="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+    <div class="flex items-center gap-3">
+      <!-- wordmark in OG-image style; the period doubles as the status dot -->
+      <span class="text-3xl leading-9 font-bold tracking-[-0.04em] text-stone-900">
+        share<StatusDot status={space.status} variant="logo" />
+      </span>
+      <ModeSwitcher {mode} onPick={setMode} labelText={m.modeText} labelFiles={m.modeFiles} />
+    </div>
+    <LangNav {lang} label={m.changeLanguage} onPick={setLang} />
+  </header>
   <Composer
     {m}
     {mode}
     {hasKeyboard}
     {stage}
-    onSubmit={(text) => space.create(text)}
+    onSubmit={(text, meta) => space.create(text, meta)}
     onError={() => showNotice(m.sendFailed)}
     onUpload={uploadStaged}
   />
@@ -353,7 +369,7 @@
             {lang}
             {m}
             pending={space.pending.some((p) => p.id === item.id)}
-            onSave={(text) => space.update(item.id, text)}
+            onSave={(text, meta) => space.update(item.id, text, meta)}
             onShare={(active, maxDownloads) => space.setShare(item.id, active, maxDownloads)}
             onDelete={() => handleDelete(item.id)}
             register={registerCard}

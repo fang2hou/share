@@ -1,3 +1,4 @@
+import { flushSync } from "svelte";
 import { WS_PING, WS_PONG, type Item, type ServerMessage } from "#shared/protocol.js";
 
 export class SpaceStore {
@@ -16,6 +17,28 @@ export class SpaceStore {
   #destroyed = false;
   #local = new Set<string>();
   #onRemote: ((item: Item) => void) | undefined;
+  // sink the list through a View Transition: named cards glide to their new
+  // spot while the newcomer fades in; no transition off-tab or unsupported,
+  // and never two at once — an overlapping transition is skipped by the
+  // browser mid-flight, which races the DOM update, so we just mutate
+  #vtBusy = false;
+  #sink(mutate: () => void): void {
+    if (
+      this.#vtBusy ||
+      typeof document === "undefined" ||
+      typeof document.startViewTransition !== "function" ||
+      document.visibilityState !== "visible"
+    ) {
+      mutate();
+      return;
+    }
+    this.#vtBusy = true;
+    const t = document.startViewTransition(() => flushSync(mutate));
+    const done = (): void => {
+      this.#vtBusy = false;
+    };
+    t.finished.then(done, done);
+  }
 
   #onVisibility = (): void => {
     if (this.#destroyed || document.visibilityState !== "visible") return;
@@ -56,7 +79,8 @@ export class SpaceStore {
   }
 
   upsert(item: Item): void {
-    this.pending = this.pending.filter((p) => p.id !== item.id);
+    const pendingHit = this.pending.some((p) => p.id === item.id);
+    if (pendingHit) this.pending = this.pending.filter((p) => p.id !== item.id);
     const index = this.items.findIndex((i) => i.id === item.id);
     if (index >= 0) {
       const existing = this.items[index];
@@ -67,12 +91,20 @@ export class SpaceStore {
     }
     let insertAt = this.items.findIndex((i) => i.createdAt < item.createdAt);
     if (insertAt < 0) insertAt = this.items.length;
-    this.items.splice(insertAt, 0, item);
+    // local echo: the pending card is already on screen at this spot, animating
+    // its confirmed twin again would replay the sink for no visual reason
+    if (this.#local.delete(item.id)) {
+      this.items.splice(insertAt, 0, item);
+      return;
+    }
+    this.#sink(() => this.items.splice(insertAt, 0, item));
   }
 
   remove(ids: string[]): void {
     const removed = new Set(ids);
-    this.items = this.items.filter((i) => !removed.has(i.id));
+    this.#sink(() => {
+      this.items = this.items.filter((i) => !removed.has(i.id));
+    });
   }
 
   async refresh(): Promise<void> {
@@ -126,16 +158,27 @@ export class SpaceStore {
     }
   }
 
-  async create(text: string): Promise<boolean> {
+  async create(text: string, meta: { filename?: string; suffix?: string } = {}): Promise<boolean> {
     const id = crypto.randomUUID();
     this.#local.add(id);
     const now = Date.now();
-    this.pending.unshift({ id, text, createdAt: now, updatedAt: now, kind: "text" });
+    // the optimistic card must render synchronously: a View Transition defers
+    // this mutation behind its capture step, and the POST's own upsert can
+    // then land first, producing the same key in both pending and items
+    this.pending.unshift({
+      id,
+      text,
+      createdAt: now,
+      updatedAt: now,
+      kind: "text",
+      filename: meta.filename,
+      suffix: meta.suffix,
+    });
     try {
       const res = await fetch("/api/items", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, text }),
+        body: JSON.stringify({ id, text, filename: meta.filename, suffix: meta.suffix }),
       });
       if (res.status === 401) {
         location.href = "/auth/login";
@@ -154,12 +197,24 @@ export class SpaceStore {
     }
   }
 
-  async update(id: string, text: string): Promise<boolean> {
+  /**
+   * callers pass the full desired metadata state: undefined filename/suffix
+   * means "clear" (the server treats null as clear)
+   */
+  async update(
+    id: string,
+    text: string,
+    meta: { filename?: string; suffix?: string } = {},
+  ): Promise<boolean> {
     try {
       const res = await fetch("/api/items/" + id, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text }),
+        body: JSON.stringify({
+          text,
+          filename: meta.filename ?? null,
+          suffix: meta.suffix ?? null,
+        }),
       });
       if (res.status !== 200) return false;
       const data = (await res.json()) as { item: Item };

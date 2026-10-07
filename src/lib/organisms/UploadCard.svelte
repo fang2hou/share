@@ -9,9 +9,7 @@
   const sizeLabel = $derived(formatFileSize(size));
 </script>
 
-<article
-  class="squircle flex gap-3 rounded-2xl border border-stone-200/80 bg-white p-4 shadow-sm opacity-80"
->
+<article class="squircle flex gap-3 rounded-2xl border border-stone-200/80 bg-white p-4 opacity-80">
   <div class="min-w-0 flex-1">
     <div class="flex items-baseline gap-2">
       <span class="text-xl font-bold tracking-tight text-stone-400 tabular-nums">{progress}%</span>
