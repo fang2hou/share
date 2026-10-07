@@ -97,7 +97,7 @@
     aria-haspopup="listbox"
     aria-expanded={open}
   >
-    <span class="truncate pr-4">
+    <span class="truncate pr-4 {display ? '' : 'text-stone-400'}">
       {display ? display.suffix : placeholder}
     </span>
   </button>
