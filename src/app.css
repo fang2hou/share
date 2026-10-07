@@ -217,6 +217,12 @@ pre.shiki {
   scrollbar-color: transparent transparent;
 }
 
+/* pangu-style spacing between CJK and latin/numerals — render-only: the
+   stored text and clipboard stay verbatim; engines without it ignore it */
+.cjk-autospace {
+  text-autospace: normal;
+}
+
 pre.shiki code {
   font-family: inherit;
 }

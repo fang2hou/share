@@ -274,7 +274,9 @@
         {/if}
       </div>
     {:else}
-      <p class="mt-2 text-base leading-relaxed break-words whitespace-pre-wrap text-stone-800">
+      <p
+        class="cjk-autospace mt-2 text-base leading-relaxed break-words whitespace-pre-wrap text-stone-800"
+      >
         {item.text}
       </p>
     {/if}
