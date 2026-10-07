@@ -112,7 +112,7 @@
         type="button"
         onclick={() => void submit()}
         disabled={!canSend}
-        class="ml-auto flex h-10 items-center gap-2 rounded-lg bg-orange-600 px-5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-orange-700 active:scale-[.98] disabled:pointer-events-none disabled:opacity-40"
+        class="ml-auto flex h-9 items-center gap-2 rounded-lg bg-orange-600 px-5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-orange-700 active:scale-[.98] disabled:pointer-events-none disabled:opacity-40"
       >
         {m.send}
       </button>

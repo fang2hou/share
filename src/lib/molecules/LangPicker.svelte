@@ -138,7 +138,7 @@
           bind:value={query}
           onkeydown={onSearchKeydown}
           placeholder={searchPlaceholder}
-          class="h-8 w-full rounded-lg bg-stone-100 px-2.5 text-sm text-stone-800 placeholder:text-stone-400 focus:outline-none"
+          class="h-8 w-full rounded bg-stone-100 px-2.5 text-sm text-stone-800 placeholder:text-stone-400 focus:outline-none"
         />
       </div>
       <ul class="max-h-64 overflow-y-auto p-1">
