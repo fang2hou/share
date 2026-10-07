@@ -16,7 +16,7 @@
 {#if variant === "logo"}
   <!-- the wordmark period: OG-image style, colored by connection state -->
   <span
-    class="ml-[0.18em] inline-block size-[0.24em] translate-y-[0.05em] rounded-full {color}"
+    class="ml-[0.18em] inline-block size-[0.24em] translate-y-[0.02em] rounded-full {color}"
     title={status}
   ></span>
 {:else}
