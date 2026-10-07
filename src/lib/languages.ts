@@ -10,8 +10,12 @@ export type LanguageDef = {
 
 export const LANGUAGES: LanguageDef[] = [
   { suffix: "ts", name: "TypeScript", hljs: "typescript" },
+  { suffix: "tsx", name: "TSX", hljs: "typescript" },
   { suffix: "js", name: "JavaScript", hljs: "javascript" },
-  { suffix: "py", name: "Python", hljs: "python" },
+  { suffix: "jsx", name: "JSX", hljs: "javascript" },
+  { suffix: "svelte", name: "Svelte", hljs: "xml" },
+  { suffix: "astro", name: "Astro", hljs: "xml" },
+  { suffix: "vue", name: "Vue", hljs: "xml" },
   { suffix: "cpp", name: "C++", hljs: "cpp" },
   { suffix: "c", name: "C", hljs: "c" },
   { suffix: "go", name: "Go", hljs: "go" },
@@ -24,7 +28,7 @@ export const LANGUAGES: LanguageDef[] = [
   { suffix: "rb", name: "Ruby", hljs: "ruby" },
   { suffix: "html", name: "HTML", hljs: "xml" },
   { suffix: "css", name: "CSS", hljs: "css" },
-  { suffix: "json", name: "JSON", hljs: "json" },
+  { suffix: "scss", name: "SCSS", hljs: "scss" },
   { suffix: "yaml", name: "YAML", hljs: "yaml" },
   { suffix: "toml", name: "TOML", hljs: "ini" },
   { suffix: "sql", name: "SQL", hljs: "sql" },
@@ -42,7 +46,6 @@ export const LANGUAGES: LanguageDef[] = [
 // alternative suffixes resolve to the same definition, e.g. "typescript" -> ts
 const ALIASES: Record<string, string> = {
   typescript: "ts",
-  jsx: "js",
   mjs: "js",
   cjs: "js",
   python: "py",

@@ -28,7 +28,7 @@ const loaders: Record<string, () => Promise<{ default: unknown }>> = {
   php: () => import("highlight.js/lib/languages/php"),
   ruby: () => import("highlight.js/lib/languages/ruby"),
   xml: () => import("highlight.js/lib/languages/xml"),
-  css: () => import("highlight.js/lib/languages/css"),
+  scss: () => import("highlight.js/lib/languages/scss"),
   json: () => import("highlight.js/lib/languages/json"),
   yaml: () => import("highlight.js/lib/languages/yaml"),
   ini: () => import("highlight.js/lib/languages/ini"),
