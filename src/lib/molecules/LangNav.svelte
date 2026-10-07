@@ -76,7 +76,7 @@
   }
 
   // clicking a language leaves the button focused, and :focus-within keeps the
-  // strip expanded after the pointer leaves. Drop pointer-acquired focus about
+  // strip expanded after the pointer leaves. Drop pointer-acquired focus half
   // a second after hover-out so the strip shrinks on its own; keyboard focus
   // (tabbing) is never blurred.
   let focusFromPointer = false;
@@ -94,7 +94,7 @@
       if (!focusFromPointer) return;
       focusFromPointer = false;
       (nav?.querySelector(":focus") as HTMLElement | null)?.blur();
-    }, 1_000);
+    }, 500);
   }
 
   $effect(() => {
