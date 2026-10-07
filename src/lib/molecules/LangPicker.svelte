@@ -141,14 +141,14 @@
           class="h-8 w-full rounded bg-stone-100 px-2.5 text-sm text-stone-800 placeholder:text-stone-400 focus:outline-none"
         />
       </div>
-      <ul class="max-h-64 overflow-y-auto px-1 pt-1 pb-2">
+      <ul class="max-h-64 overflow-y-auto p-2">
         {#each filtered as entry, i (entry.suffix)}
           <li>
             <button
               type="button"
               role="option"
               aria-selected={entry.suffix === value}
-              class="flex w-full cursor-pointer items-center justify-between rounded-lg px-3 py-2 text-left text-sm transition-colors {entry.suffix ===
+              class="flex w-full cursor-pointer items-center justify-between rounded px-3 py-2 text-left text-sm transition-colors {entry.suffix ===
               value
                 ? 'bg-stone-100 font-medium text-stone-900'
                 : 'text-stone-600 hover:bg-stone-100'} {i === highlightIndex ? 'bg-stone-100' : ''}"
@@ -160,7 +160,7 @@
             </button>
           </li>
         {:else}
-          <li class="px-3 py-4 text-center text-sm text-stone-400">{noResults}</li>
+          <li class="px-2 py-4 text-center text-sm text-stone-400">{noResults}</li>
         {/each}
       </ul>
     </div>
