@@ -13,6 +13,7 @@
   import { SpaceStore } from "#lib/space.svelte.js";
   import { mountFavicon, setFaviconBadge } from "#lib/favicon.js";
   import { dayKey, dayKeyOffset, dayLabel } from "#lib/time.js";
+  import { loadLangFonts } from "#lib/fonts.js";
 
   function initialLang(): Lang {
     const saved = localStorage.getItem("ts_lang");
@@ -24,6 +25,7 @@
   const m = $derived(messages[lang]);
   $effect(() => {
     document.documentElement.lang = lang;
+    void loadLangFonts(lang);
   });
 
   function setLang(next: Lang): void {
@@ -294,6 +296,8 @@
        viewport; on touch the language picker is a collapsed trigger pill -->
   <header class="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
     <div class="flex items-center gap-3">
+      <!-- text wordmark: the site's logo -->
+      <span class="text-base font-semibold tracking-tight text-stone-800">share</span>
       <StatusDot status={space.status} />
       <ModeSwitcher {mode} onPick={setMode} labelText={m.modeText} labelFiles={m.modeFiles} />
     </div>

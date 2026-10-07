@@ -169,6 +169,7 @@
         placeholder={m.filenamePlaceholder}
         class="code-font h-9 min-w-32 flex-1 rounded-lg border border-stone-300/90 bg-white px-2.5 text-sm text-stone-700 placeholder:font-sans placeholder:text-stone-400 focus:border-stone-500 focus:ring-4 focus:ring-orange-500/15 focus:outline-none"
       />
+      <span class="text-sm text-stone-400" aria-hidden="true">.</span>
       <div class="w-36 shrink-0 sm:w-44">
         <LangPicker
           bind:value={draftSuffix}

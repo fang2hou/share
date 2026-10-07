@@ -1,7 +1,65 @@
 @import "tailwindcss";
 
+/* Self-hosted IBM Plex. Latin ships with the initial CSS (small slices);
+   Japanese and Korean slices load on demand from src/lib/fonts.ts. Every
+   bundled face prefers the locally installed copy first, so machines with
+   IBM Plex installed download nothing. IBM publishes no SC/TC webfont, so
+   those stacks stay local-only and fall back to system CJK fonts. */
+@font-face {
+  font-family: "IBM Plex Sans";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src:
+    local("IBM Plex Sans"),
+    local("IBM Plex Sans Regular"),
+    url("@fontsource/ibm-plex-sans/files/ibm-plex-sans-latin-400-normal.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "IBM Plex Sans";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src:
+    local("IBM Plex Sans Medium"),
+    url("@fontsource/ibm-plex-sans/files/ibm-plex-sans-latin-500-normal.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "IBM Plex Sans";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src:
+    local("IBM Plex Sans SemiBold"),
+    url("@fontsource/ibm-plex-sans/files/ibm-plex-sans-latin-600-normal.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "IBM Plex Sans";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src:
+    local("IBM Plex Sans Bold"),
+    url("@fontsource/ibm-plex-sans/files/ibm-plex-sans-latin-700-normal.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "IBM Plex Mono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src:
+    local("IBM Plex Mono"),
+    local("IBM Plex Mono Regular"),
+    url("@fontsource/ibm-plex-mono/files/ibm-plex-mono-latin-400-normal.woff2") format("woff2");
+}
+
 html {
-  font-family: "IBM Plex Sans SC", "PingFang SC", "Microsoft YaHei UI", system-ui, sans-serif;
+  font-family:
+    "IBM Plex Sans", "IBM Plex Sans SC", "PingFang SC", "Microsoft YaHei UI", system-ui, sans-serif;
   -webkit-text-size-adjust: 100%;
 }
 
@@ -32,11 +90,20 @@ button {
 }
 
 html:lang(zh-TW) {
-  font-family: "IBM Plex Sans TC", "PingFang TC", "Microsoft JhengHei UI", system-ui, sans-serif;
+  font-family:
+    "IBM Plex Sans", "IBM Plex Sans TC", "PingFang TC", "Microsoft JhengHei UI", system-ui,
+    sans-serif;
+}
+
+html:lang(ja) {
+  font-family:
+    "IBM Plex Sans", "IBM Plex Sans JP", "Hiragino Sans", "Yu Gothic UI", system-ui, sans-serif;
 }
 
 html:lang(ko) {
-  font-family: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  font-family:
+    "IBM Plex Sans", "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui,
+    sans-serif;
 }
 
 ::selection {
@@ -130,9 +197,9 @@ html[data-mode-from="file"] {
   background: rgb(168 162 158 / 0.9);
 }
 
-/* code areas: local mono stack, no webfont */
+/* code areas: bundled IBM Plex Mono, local copy preferred */
 .code-font {
-  font-family: "JetBrains Mono", "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  font-family: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
 }
 
 /* highlight.js token theme tuned to the cream/ink/orange palette */
