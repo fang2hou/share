@@ -379,7 +379,8 @@ export default {
       request.method === "GET"
     )
       return publicShare(request, env, sharePath[1], sharePath[2]);
-    if (path === "/auth/login" && request.method === "GET") return loginRedirect(request, env);
+    if (path === "/auth/login" && request.method === "GET")
+      return await loginRedirect(request, env);
     if (path === "/auth/callback" && request.method === "GET") return handleCallback(request, env);
     if (path.startsWith("/api/")) return api(request, env, url);
     return env.ASSETS.fetch(request);

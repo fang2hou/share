@@ -110,7 +110,18 @@ function sessionCookie(token: string): string {
   return `${SESSION_COOKIE}=${token}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${SESSION_TTL_SEC}`;
 }
 
-export function loginRedirect(request: Request, env: Env): Response {
+export async function loginRedirect(request: Request, env: Env): Promise<Response> {
+  // dev placeholder credentials cannot pass GitHub: skip the OAuth dance and
+  // hand out a local session so the full product flow is testable offline.
+  // production always configures real credentials and never hits this branch.
+  if (env.GITHUB_CLIENT_ID === "dev-placeholder") {
+    console.warn(JSON.stringify({ event: "dev_login_bypass" }));
+    const token = await signSession(env.SESSION_SECRET, { sub: "1", login: "local-dev" });
+    return new Response(null, {
+      status: 302,
+      headers: { Location: "/", "Set-Cookie": sessionCookie(token) },
+    });
+  }
   const state = crypto.randomUUID();
   const redirectUri = appOrigin(env, new URL(request.url)) + "/auth/callback";
   const authorize = new URL("https://github.com/login/oauth/authorize");
