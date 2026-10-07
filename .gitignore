@@ -25,3 +25,7 @@ vite.config.ts.timestamp-*
 
 # agent session data
 .omp
+
+# Svelte public-page build artifacts
+/.public-build
+/worker/generated/*.js

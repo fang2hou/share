@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /* Self-hosted IBM Plex. Latin ships with the initial CSS (small slices);
-   Japanese and Korean slices load on demand from src/lib/fonts.ts. Every
+   Japanese and Korean slices load on demand from shared/ui/fonts.ts. Every
    bundled face prefers the locally installed copy first, so machines with
    IBM Plex installed download nothing. IBM publishes no SC/TC webfont, so
    those stacks stay local-only and fall back to system CJK fonts. */
@@ -75,6 +75,44 @@ button {
   touch-action: manipulation;
 }
 
+.site-logo {
+  font-size: calc(var(--header-control-height) / 0.698);
+  line-height: 1cap;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  color: #1c1917;
+}
+
+.site-logo-dot {
+  margin-left: 0.18em;
+  display: inline-block;
+  width: 0.24em;
+  height: 0.24em;
+  vertical-align: baseline;
+  border-radius: 9999px;
+}
+
+/* Match the bundled Plex Sans cap height to the controls' inner surface. */
+.app-header {
+  --header-control-height: 1.75rem;
+}
+.header-control {
+  height: var(--header-control-height);
+}
+.header-mode-control {
+  width: var(--header-control-height);
+}
+@media (min-width: 640px) {
+  .app-header {
+    --header-control-height: 2rem;
+  }
+}
+@media (pointer: coarse) {
+  .app-header {
+    --header-control-height: 2.125rem;
+  }
+}
+
 /* keyboard-shortcut hints (Shift+Enter, Esc) only make sense with a physical
    keyboard; hide them on touch-primary devices */
 @media (hover: none) and (pointer: coarse) {
@@ -110,8 +148,8 @@ html:lang(ko) {
   background-color: #fed7aa;
 }
 
-/* same-document View Transitions: only the named composer group animates on a
-   mode switch; the unnamed root stays perfectly still */
+/* The composer, date headings, and cards have independent snapshots so they
+   move together during mode changes; the unnamed root stays still. */
 ::view-transition-old(root),
 ::view-transition-new(root) {
   animation: none;
@@ -239,4 +277,22 @@ article[data-card-id]:has([data-floating]) {
     border-color: #d6d3d1;
     background-color: #fdfcfa;
   }
+}
+
+/* File actions share two fixed columns across the owner and public views. */
+.file-action-group {
+  display: grid;
+  grid-template-columns: repeat(2, auto);
+  align-items: center;
+  gap: 0.25rem;
+}
+
+button,
+.ui-chrome {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.ui-chrome {
+  -webkit-touch-callout: none;
 }

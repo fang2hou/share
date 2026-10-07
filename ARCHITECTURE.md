@@ -13,7 +13,10 @@ A single Cloudflare Worker does three jobs: it serves the prerendered SvelteKit 
 - `src/lib/space.svelte.ts` — client state: optimistic inserts, WS heartbeat/reconnect/polling fallback, upload progress
 - `worker/file-transfer.ts` — file responses, byte ranges, and streaming ZIP archives
 - `worker/share-password.ts` — salted password hashes and share-scoped unlock cookies
-- `worker/share-view.ts` — localized password gates and public file-selection pages
+- `worker/share-view.ts` — public document envelope, safe bootstrap serialization, and response security headers
+- `shared/ui/` — the single Svelte source for the header, logo, language and mode controls, icons, and file browser; both the SPA and public pages import these components
+- `shared/ui/PublicPage.svelte` — public password, file, and text views, server-rendered in the Worker and hydrated in the browser
+- `scripts/build-public.mjs` — compiles the same public Svelte tree into a Worker SSR module and hashed client assets; generated files are ignored
 - `src/lib/stage.svelte.ts` — independent file staging, upload IDs, and collection retry state
 - `src/routes/+page.svelte` — composition: composer, day groups, uploads, language switch
 
@@ -33,3 +36,15 @@ Each upload stores one R2 object. Collections retain a JSON manifest in the addi
 The owner and public file pages support individual downloads, selections, ZIP archives, and safe media/text previews. ZIP archives stream from R2 with backpressure using standard ZIP entries; selections requiring ZIP64 are rejected. Raster images, audio, video, PDFs, and text can be previewed. HTML/XML are served as plain text and SVG remains an attachment. Byte ranges support media seeking.
 
 A public file listing and password prompt do not consume the access budget. Each content transfer, including a preview or range request, consumes one access; one ZIP response consumes one access for the whole selection. Protected file names and content do not appear on the password gate.
+
+## Public-page rendering
+
+The SPA and public pages compose `AppHeader.svelte` and `FileBrowser.svelte` directly. Component markup, interaction logic, language persistence, fonts, and the stylesheet have one source. Public pages use Svelte `render` in the Worker and `hydrate` in the browser; the Worker contains no hand-written UI or inline event script.
+
+`pnpm build` builds the SvelteKit shell first, then compiles the public component twice for server and browser targets. Public client assets live under `build/_public/`; the generated Worker renderer includes their hashed asset URLs. Development rebuilds public artifacts when shared UI or application CSS changes. No deployment bindings or routing configuration are changed.
+
+The password gate receives only the locale and share path. Protected item content and file metadata enter the renderer only after the Worker validates the grant. JSON bootstrap data escapes `<` before entering the document. Public pages retain no-store, noindex, uniform 404 behavior and use a self-only script CSP. A password form remains usable without JavaScript, while selection, previews, and language changes hydrate through Svelte.
+
+Both entry points use `ReadyFrame.svelte` to hide the first frame while the restored locale and its fonts settle. A three-dot status indicator appears during that wait. Font loading is bounded to 1.8 seconds; on failure or timeout, the frame uses system fonts for the remainder of its lifetime so late font arrivals cannot move visible content. No-JavaScript public pages reveal the server-rendered content through a noscript style.
+
+Files are limited to 256 MiB. The client sends files larger than 32 MiB through owner-scoped R2 multipart sessions, with 32 MiB requests and aggregate progress. Completion streams the staging object into an immutable final key before publishing the item. Failed transfers abort their multipart session; inaccessible abandoned parts expire through R2 after seven days. Session manifests expire after one hour and are cleaned up when accessed. Text files up to 10 MiB can be previewed in ranged, UTF-8-safe 256 KiB sections. Larger text files are download-only; both the shared UI and Worker enforce this preview limit. Image, audio, video, and PDF previews retain the 256 MiB file limit.

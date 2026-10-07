@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Messages } from "#shared/i18n.js";
-  import Icon from "#lib/atoms/Icon.svelte";
+  import Icon from "#shared/ui/Icon.svelte";
   import { formatFileSize } from "#shared/format.js";
 
   let { name, size, progress, m }: { name: string; size: number; progress: number; m: Messages } =

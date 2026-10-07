@@ -1,7 +1,7 @@
 <script lang="ts">
   import { tick } from "svelte";
-  import type { Lang } from "#shared/i18n.js";
-  import Icon from "#lib/atoms/Icon.svelte";
+  import { LANGUAGE_OPTIONS, type Lang } from "#shared/i18n.js";
+  import Icon from "#shared/ui/Icon.svelte";
 
   let {
     lang,
@@ -13,13 +13,7 @@
     onPick: (lang: Lang) => void;
   } = $props();
 
-  const LANGS: { id: Lang; short: string; name: string }[] = [
-    { id: "zh-CN", short: "简", name: "简体中文" },
-    { id: "zh-TW", short: "繁", name: "繁體中文" },
-    { id: "ja", short: "日", name: "日本語" },
-    { id: "ko", short: "한", name: "한국어" },
-    { id: "en", short: "En", name: "English" },
-  ];
+  const LANGS = LANGUAGE_OPTIONS;
   const current = $derived(LANGS.find((language) => language.id === lang) ?? LANGS[0]!);
   const menuId = $props.id();
   let open = $state(false);
@@ -93,10 +87,10 @@
     aria-controls={menuId}
     onclick={() => (open = !open)}
     onkeydown={openFromKeyboard}
-    class="flex min-h-9 min-w-11 cursor-pointer items-center justify-center rounded-full border border-stone-200/80 bg-white p-0.5 shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-500 pointer-coarse:min-h-11"
+    class="group flex min-h-9 min-w-11 cursor-pointer items-center justify-center rounded-xl border border-stone-200/80 bg-white p-1 shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-500 pointer-coarse:min-h-11"
   >
     <span
-      class="flex h-7 min-w-9 items-center justify-center rounded-full bg-stone-900 px-3 text-xs font-medium text-white select-none"
+      class="header-control flex min-w-9 items-center justify-center rounded-lg bg-stone-100 transition-colors group-hover:bg-stone-200 px-3 text-xs sm:text-sm font-medium text-stone-700 select-none"
       >{current.short}</span
     >
   </button>

@@ -287,14 +287,6 @@
     background-color: transparent;
   }
 
-  .picker:focus-within .picker-input {
-    box-shadow: 0 0 0 4px rgb(249 115 22 / 0.15);
-  }
-
-  .picker[data-open="true"]:focus-within .picker-input {
-    box-shadow: none;
-  }
-
   .picker-panel {
     top: 0;
     padding-top: 2.25rem;

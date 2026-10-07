@@ -1,3 +1,4 @@
+import { uploadFile as transferFile } from "./upload.js";
 import { flushSync } from "svelte";
 import { WS_PING, WS_PONG, type Item, type ServerMessage } from "#shared/protocol.js";
 
@@ -16,6 +17,9 @@ export class SpaceStore {
   #pongAt = 0;
   #destroyed = false;
   #local = new Set<string>();
+  #knownIds = new Set<string>();
+  #snapshotReady = false;
+  #newestCreatedAt = 0;
   #onRemote: ((item: Item) => void) | undefined;
   // sink the list through a View Transition: named cards glide to their new
   // spot while the newcomer fades in; no transition off-tab or unsupported,
@@ -72,13 +76,31 @@ export class SpaceStore {
   }
 
   applySnapshot(items: Item[], hasMore = this.hasMore): void {
+    // Initial history is already read; later snapshots can contain content missed offline.
+    const incoming = this.#snapshotReady
+      ? items.filter(
+          (item) =>
+            !this.#knownIds.has(item.id) &&
+            !this.#local.has(item.id) &&
+            item.createdAt >= this.#newestCreatedAt,
+        )
+      : [];
+    for (const item of items) this.#remember(item);
+    this.#snapshotReady = true;
     this.items = [...items].sort((a, b) => b.createdAt - a.createdAt);
     this.hasMore = hasMore;
     const ids = new Set(items.map((i) => i.id));
     this.pending = this.pending.filter((p) => !ids.has(p.id));
+    for (const item of incoming) this.#onRemote?.(item);
+  }
+
+  #remember(item: Item): void {
+    this.#knownIds.add(item.id);
+    this.#newestCreatedAt = Math.max(this.#newestCreatedAt, item.createdAt);
   }
 
   upsert(item: Item): void {
+    this.#remember(item);
     const pendingHit = this.pending.some((p) => p.id === item.id);
     if (pendingHit) this.pending = this.pending.filter((p) => p.id !== item.id);
     const index = this.items.findIndex((i) => i.id === item.id);
@@ -254,42 +276,17 @@ export class SpaceStore {
   ): Promise<boolean> {
     this.#local.add(collectionId ?? id);
     this.uploads.unshift({ id, name: file.name, size: file.size, progress: 0 });
-    const { promise, resolve, reject } = Promise.withResolvers<{
-      status: number;
-      item: Item | null;
-    }>();
-    const xhr = new XMLHttpRequest();
-    xhr.open("POST", "/api/files");
-    xhr.responseType = "json";
-    xhr.setRequestHeader("content-type", file.type || "application/octet-stream");
-    xhr.setRequestHeader("x-id", id);
-    if (collectionId) xhr.setRequestHeader("x-collection-id", collectionId);
-    xhr.setRequestHeader("x-file-name", encodeURIComponent(file.name));
-    xhr.upload.onprogress = (e) => {
-      if (!e.lengthComputable) return;
-      const upload = this.uploads.find((u) => u.id === id);
-      if (upload) upload.progress = Math.round((e.loaded / e.total) * 100);
-    };
-    xhr.onload = () => {
-      const body = xhr.response as { item?: Item } | null;
-      resolve({ status: xhr.status, item: body?.item ?? null });
-    };
-    xhr.onerror = () => reject(new Error("upload_failed"));
-    xhr.onabort = () => reject(new Error("upload_aborted"));
-    xhr.send(file);
     try {
-      const result = await promise;
-      this.uploads = this.uploads.filter((u) => u.id !== id);
-      if (result.status === 401) {
-        location.href = "/auth/login";
-        return false;
-      }
-      if (result.status !== 201 || result.item === null) return false;
-      this.upsert(result.item);
+      const item = await transferFile(file, id, collectionId, (percent) => {
+        const upload = this.uploads.find((u) => u.id === id);
+        if (upload) upload.progress = percent;
+      });
+      this.upsert(item);
       return true;
     } catch {
-      this.uploads = this.uploads.filter((u) => u.id !== id);
       return false;
+    } finally {
+      this.uploads = this.uploads.filter((u) => u.id !== id);
     }
   }
 
@@ -355,9 +352,13 @@ export class SpaceStore {
       const msg = JSON.parse(raw as string) as ServerMessage;
       if (msg.type === "snapshot") this.applySnapshot(msg.items, msg.hasMore);
       else if (msg.type === "upsert") {
+        // Capture before upsert consumes a local echo or schedules a view transition.
+        const isNewRemote =
+          !this.#knownIds.has(msg.item.id) &&
+          !this.#local.has(msg.item.id) &&
+          msg.item.createdAt === msg.item.updatedAt;
         this.upsert(msg.item);
-        // new content from another device: creation (not an edit), not ours
-        if (!this.#local.has(msg.item.id) && msg.item.createdAt === msg.item.updatedAt) {
+        if (isNewRemote) {
           this.#onRemote?.(msg.item);
         }
       } else if (msg.type === "remove") this.remove(msg.ids);

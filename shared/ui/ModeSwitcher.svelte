@@ -1,5 +1,5 @@
 <script lang="ts">
-  import Icon from "#lib/atoms/Icon.svelte";
+  import Icon from "#shared/ui/Icon.svelte";
 
   let {
     mode,
@@ -15,12 +15,12 @@
 </script>
 
 <div
-  class="relative flex items-center rounded-full border border-stone-200/80 bg-white p-0.5 shadow-sm"
+  class="relative flex items-center rounded-xl border border-stone-200/80 bg-white p-1 shadow-sm"
   role="group"
   aria-label="{labelText} / {labelFiles}"
 >
   <span
-    class="absolute inset-y-0.5 left-0.5 w-[calc(50%-0.125rem)] rounded-full bg-stone-900 transition-transform duration-200 ease-out"
+    class="absolute inset-y-1 left-1 w-[calc(50%-0.25rem)] rounded-lg bg-stone-200 transition-transform duration-200 ease-out"
     style="transform: translateX({mode === 'file' ? '100%' : '0%'})"
     aria-hidden="true"
   ></span>
@@ -28,9 +28,9 @@
     onclick={() => onPick("text")}
     aria-pressed={mode === "text"}
     title={labelText}
-    class="relative z-10 flex size-7 items-center justify-center rounded-full transition-colors duration-200 pointer-coarse:size-9 {mode ===
+    class="relative z-10 header-control header-mode-control flex items-center justify-center rounded-lg transition-colors duration-200 {mode ===
     'text'
-      ? 'text-white'
+      ? 'text-stone-900'
       : 'text-stone-400 hover:text-stone-700'}"
   >
     <Icon name="type" size={14} />
@@ -39,9 +39,9 @@
     onclick={() => onPick("file")}
     aria-pressed={mode === "file"}
     title={labelFiles}
-    class="relative z-10 flex size-7 items-center justify-center rounded-full transition-colors duration-200 pointer-coarse:size-9 {mode ===
+    class="relative z-10 header-control header-mode-control flex items-center justify-center rounded-lg transition-colors duration-200 {mode ===
     'file'
-      ? 'text-white'
+      ? 'text-stone-900'
       : 'text-stone-400 hover:text-stone-700'}"
   >
     <Icon name="paperclip" size={14} />

@@ -1,9 +1,9 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import type { Messages } from "#shared/i18n.js";
+  import { formatCount, type Messages } from "#shared/i18n.js";
   import type { FileStage } from "#lib/stage.svelte.js";
   import { formatFileSize } from "#shared/format.js";
-  import Icon from "#lib/atoms/Icon.svelte";
+  import Icon from "#shared/ui/Icon.svelte";
   import LangPicker from "#lib/molecules/LangPicker.svelte";
   import { keys } from "#lib/kbd.js";
 
@@ -81,7 +81,7 @@
   {#if mode === "text"}
     <div class="space-y-2.5">
       <div
-        class="squircle rounded-2xl border border-stone-300/90 bg-white transition focus-within:border-stone-500 focus-within:ring-4 focus-within:ring-orange-500/15"
+        class="squircle rounded-2xl border border-stone-300/90 bg-white transition-colors hover:border-stone-400 focus-within:border-stone-500"
       >
         <!-- svelte-ignore a11y_autofocus -->
         <textarea
@@ -100,7 +100,7 @@
           bind:value={filename}
           maxlength={64}
           placeholder={m.filenamePlaceholder}
-          class="code-font h-9 min-w-32 flex-1 rounded-lg border border-stone-300/90 bg-white px-2.5 text-sm text-stone-700 placeholder:font-sans placeholder:text-stone-400 focus:border-stone-500 focus:ring-4 focus:ring-orange-500/15 focus:outline-none"
+          class="code-font h-9 min-w-32 flex-1 rounded-lg border border-stone-300/90 bg-white px-2.5 text-sm text-stone-700 placeholder:font-sans placeholder:text-stone-400 hover:border-stone-400 focus:border-stone-500 focus:outline-none"
         />
         <!-- the dot reads filename + suffix as one file name -->
         <span
@@ -185,8 +185,7 @@
 
         <div class="flex flex-wrap items-center justify-between gap-2 px-1">
           <p class="text-xs text-stone-400">
-            {stage.files.length}
-            {m.filesUnit} · {formatFileSize(stage.totalBytes)}
+            {formatCount(m.fileCount, stage.files.length)} · {formatFileSize(stage.totalBytes)}
           </p>
           <div class="flex items-center gap-2">
             <button
