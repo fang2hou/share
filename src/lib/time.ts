@@ -12,11 +12,11 @@ export function relativeTime(ts: number, now: number, lang: Lang): string {
     rtf = new Intl.RelativeTimeFormat(lang, { numeric: "auto" });
     rtfCache.set(lang, rtf);
   }
-  // zh rtf yields "3分钟前"-style tight runs; display them pangu-spaced
-  const label = (s: string): string => (lang.startsWith("zh") ? spaceCjk(s) : s);
-  if (diff < 3_600_000) return label(rtf.format(-Math.max(1, Math.floor(diff / 60_000)), "minute"));
-  if (diff < 86_400_000) return label(rtf.format(-Math.floor(diff / 3_600_000), "hour"));
-  return label(rtf.format(-Math.floor(diff / 86_400_000), "day"));
+  // ICU yields tight runs like "3分钟前"; every locale displays pangu-spaced
+  if (diff < 3_600_000)
+    return spaceCjk(rtf.format(-Math.max(1, Math.floor(diff / 60_000)), "minute"));
+  if (diff < 86_400_000) return spaceCjk(rtf.format(-Math.floor(diff / 3_600_000), "hour"));
+  return spaceCjk(rtf.format(-Math.floor(diff / 86_400_000), "day"));
 }
 
 export function absoluteTime(ts: number, lang: Lang): string {
@@ -50,21 +50,21 @@ export function dayKey(ts: number): string {
 
 export function dayLabel(ts: number, lang: Lang): string {
   // ICU gives ja/ko a parenthesized weekday (10月7日（水）) but zh none at all;
-  // assemble it ourselves so all CJK locales read the same way
+  // assemble it ourselves so all CJK locales read the same way, pangu-spaced
   if (lang === "zh-CN" || lang === "zh-TW") {
     let dtf = dayLabelCache.get(lang);
     if (!dtf) {
       dtf = new Intl.DateTimeFormat(lang, { month: "long", day: "numeric" });
       dayLabelCache.set(lang, dtf);
     }
-    return `${dtf.format(ts)}（${zhWeekCache.format(ts)}）`;
+    return spaceCjk(`${dtf.format(ts)}（${zhWeekCache.format(ts)}）`);
   }
   let dtf = dayLabelCache.get(lang);
   if (!dtf) {
     dtf = new Intl.DateTimeFormat(lang, { month: "long", day: "numeric", weekday: "short" });
     dayLabelCache.set(lang, dtf);
   }
-  return dtf.format(ts);
+  return spaceCjk(dtf.format(ts));
 }
 
 export function dayKeyOffset(now: number, days: number): string {
