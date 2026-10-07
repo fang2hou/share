@@ -162,12 +162,24 @@ export class SpaceStore {
     }
   }
 
-  async update(id: string, text: string): Promise<boolean> {
+  /**
+   * callers pass the full desired metadata state: undefined filename/suffix
+   * means "clear" (the server treats null as clear)
+   */
+  async update(
+    id: string,
+    text: string,
+    meta: { filename?: string; suffix?: string } = {},
+  ): Promise<boolean> {
     try {
       const res = await fetch("/api/items/" + id, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text }),
+        body: JSON.stringify({
+          text,
+          filename: meta.filename ?? null,
+          suffix: meta.suffix ?? null,
+        }),
       });
       if (res.status !== 200) return false;
       const data = (await res.json()) as { item: Item };

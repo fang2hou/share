@@ -13,6 +13,7 @@
   import Icon from "#lib/atoms/Icon.svelte";
   import CardMeta from "#lib/molecules/CardMeta.svelte";
   import ActionMenu from "#lib/molecules/ActionMenu.svelte";
+  import LangPicker from "#lib/molecules/LangPicker.svelte";
   import SharePanel from "#lib/molecules/SharePanel.svelte";
   import { formatFileSize } from "#lib/format.js";
   import { copyText } from "#lib/clipboard.js";
@@ -38,7 +39,7 @@
     lang: Lang;
     m: Messages;
     pending: boolean;
-    onSave: (text: string) => Promise<boolean>;
+    onSave: (text: string, meta: { filename?: string; suffix?: string }) => Promise<boolean>;
     onShare: (active: boolean, maxDownloads: number | null) => Promise<boolean>;
     onDelete: () => Promise<boolean>;
     register?: (id: string, api: CardApi) => () => void;
@@ -48,14 +49,16 @@
 
   let editing = $state(false);
   let draft = $state("");
-  let saving = $state(false);
   let saveFailed = $state(false);
   let copyState = $state<"idle" | "ok" | "fail">("idle");
   let resetCopyId: number | undefined;
-  let shareOpen = $state(false);
+  let draftFilename = $state("");
+  let draftSuffix = $state<string | null>(null);
   let highlighted = $state("");
+  let shareOpen = $state(false);
 
   const codeLang = $derived(findLanguage(item.kind === "text" ? item.suffix : null));
+  let saving = $state(false);
 
   // (re)highlight whenever the text or language changes; plain text while loading
   $effect(() => {
@@ -85,6 +88,8 @@
 
   function startEdit(): void {
     draft = item.text;
+    draftFilename = item.filename ?? "";
+    draftSuffix = item.suffix ?? null;
     saveFailed = false;
     editing = true;
   }
@@ -92,12 +97,16 @@
   async function save(): Promise<void> {
     const text = draft.trim();
     if (text.length === 0) return;
-    if (text === item.text) {
+    const meta = {
+      filename: draftFilename.trim().length > 0 ? draftFilename.trim() : undefined,
+      suffix: draftSuffix ?? undefined,
+    };
+    if (text === item.text && meta.filename === item.filename && meta.suffix === item.suffix) {
       editing = false;
       return;
     }
     saving = true;
-    const ok = await onSave(text);
+    const ok = await onSave(text, meta);
     saving = false;
     if (ok) editing = false;
     else saveFailed = true;
@@ -152,6 +161,23 @@
       autofocus
       class="squircle min-h-20 w-full rounded-xl border border-stone-300/90 bg-white p-3 text-base leading-relaxed field-sizing-content transition placeholder:text-stone-400 focus:border-stone-500 focus:ring-4 focus:ring-orange-500/15 focus:outline-none"
     ></textarea>
+    <div class="mt-2 flex flex-wrap items-center gap-2">
+      <input
+        bind:value={draftFilename}
+        maxlength={64}
+        placeholder={m.filenamePlaceholder}
+        class="code-font h-9 min-w-32 flex-1 rounded-lg border border-stone-300/90 bg-white px-2.5 text-sm text-stone-700 placeholder:font-sans placeholder:text-stone-400 focus:border-stone-500 focus:ring-4 focus:ring-orange-500/15 focus:outline-none"
+      />
+      <div class="w-36 shrink-0 sm:w-44">
+        <LangPicker
+          bind:value={draftSuffix}
+          placeholder={m.suffixPlaceholder}
+          searchPlaceholder={m.searchSuffix}
+          noResults={m.noSuffixMatches}
+          clearLabel={m.clearSuffix}
+        />
+      </div>
+    </div>
     <p class="kbd-hint mt-2 text-xs text-stone-400">
       {m.editHint.replaceAll("{saveKeys}", keys.save).replaceAll("{escKeys}", keys.esc)}
       {#if saveFailed}<span class="font-medium text-red-600">{m.saveFailed}</span>{/if}

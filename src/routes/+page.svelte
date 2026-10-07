@@ -360,7 +360,7 @@
             {lang}
             {m}
             pending={space.pending.some((p) => p.id === item.id)}
-            onSave={(text) => space.update(item.id, text)}
+            onSave={(text, meta) => space.update(item.id, text, meta)}
             onShare={(active, maxDownloads) => space.setShare(item.id, active, maxDownloads)}
             onDelete={() => handleDelete(item.id)}
             register={registerCard}

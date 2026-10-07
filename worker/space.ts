@@ -190,13 +190,31 @@ export class Space extends DurableObject<Env> {
     return { item: this.#rowToItem(row), fileKey: row.file_key };
   }
 
-  async update(id: string, text: string): Promise<Item | null> {
+  /**
+   * text is always rewritten; filename/suffix are only written when defined
+   * (undefined = keep current value, null = clear, string = set)
+   */
+  async update(
+    id: string,
+    text: string,
+    filename?: string | null,
+    suffix?: string | null,
+  ): Promise<Item | null> {
+    const sets = ["text = ?", "updated_at = ?"];
+    const args: unknown[] = [text, Date.now()];
+    if (filename !== undefined) {
+      sets.push("filename = ?");
+      args.push(filename);
+    }
+    if (suffix !== undefined) {
+      sets.push("suffix = ?");
+      args.push(suffix);
+    }
+    args.push(id);
     const rows = this.ctx.storage.sql
       .exec<Row>(
-        `UPDATE items SET text = ?, updated_at = ? WHERE id = ? AND kind = 'text' RETURNING ${SELECT_COLUMNS}`,
-        text,
-        Date.now(),
-        id,
+        `UPDATE items SET ${sets.join(", ")} WHERE id = ? AND kind = 'text' RETURNING ${SELECT_COLUMNS}`,
+        ...args,
       )
       .toArray();
     if (rows.length === 0) return null;

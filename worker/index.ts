@@ -86,11 +86,24 @@ function validateText(value: unknown): string | null {
   return text;
 }
 
+// PATCH meta semantics: absent = keep current, null = clear, string = set
+function patchMeta(
+  value: unknown,
+  pattern: RegExp,
+  lower: boolean,
+): string | null | undefined | false {
+  if (value === undefined) return undefined;
+  if (value === null) return null;
+  if (typeof value !== "string") return false;
+  const v = value.trim();
+  return pattern.test(v) ? (lower ? v.toLowerCase() : v) : false;
+}
+
 function validateFilename(value: unknown): string | null | false {
   if (value === undefined || value === null) return null;
   if (typeof value !== "string") return false;
-  const name = value.trim();
-  return FILENAME_PATTERN.test(name) ? name : false;
+  const filename = value.trim();
+  return FILENAME_PATTERN.test(filename) ? filename : false;
 }
 
 function validateSuffix(value: unknown): string | null | false {
@@ -208,7 +221,11 @@ async function api(request: Request, env: Env, url: URL): Promise<Response> {
       if (!body) return jsonError("bad_request", 400);
       const text = validateText(body.text);
       if (text === null) return jsonError("bad_request", 400);
-      const item = await stub.update(itemId, text);
+      const filename = patchMeta(body.filename, FILENAME_PATTERN, false);
+      if (filename === false) return jsonError("bad_request", 400);
+      const suffix = patchMeta(body.suffix, SUFFIX_PATTERN, true);
+      if (suffix === false) return jsonError("bad_request", 400);
+      const item = await stub.update(itemId, text, filename, suffix);
       if (item === null) return jsonError("not_found", 404);
       return Response.json({ item });
     }
