@@ -296,9 +296,10 @@
        viewport; on touch the language picker is a collapsed trigger pill -->
   <header class="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
     <div class="flex items-center gap-3">
-      <!-- text wordmark: the site's logo -->
-      <span class="text-base font-semibold tracking-tight text-stone-800">share</span>
-      <StatusDot status={space.status} />
+      <!-- wordmark in OG-image style; the period doubles as the status dot -->
+      <span class="text-3xl leading-9 font-bold tracking-[-0.04em] text-stone-900">
+        share<StatusDot status={space.status} variant="logo" />
+      </span>
       <ModeSwitcher {mode} onPick={setMode} labelText={m.modeText} labelFiles={m.modeFiles} />
     </div>
     <LangNav {lang} label={m.changeLanguage} onPick={setLang} />
