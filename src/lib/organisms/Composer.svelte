@@ -2,7 +2,7 @@
   import { onMount } from "svelte";
   import type { Messages } from "#shared/i18n.js";
   import type { FileStage } from "#lib/stage.svelte.js";
-  import { formatFileSize } from "#lib/format.js";
+  import { formatFileSize } from "#shared/format.js";
   import Icon from "#lib/atoms/Icon.svelte";
   import LangPicker from "#lib/molecules/LangPicker.svelte";
   import { keys } from "#lib/kbd.js";
@@ -15,6 +15,7 @@
     onSubmit,
     onError,
     onUpload,
+    onUploadOne,
   }: {
     m: Messages;
     mode: "text" | "file";
@@ -23,6 +24,7 @@
     onSubmit: (text: string, meta: { filename?: string; suffix?: string }) => Promise<boolean>;
     onError: () => void;
     onUpload: () => Promise<boolean>;
+    onUploadOne: (id: string) => Promise<boolean>;
   } = $props();
 
   let value = $state("");
@@ -101,7 +103,10 @@
           class="code-font h-9 min-w-32 flex-1 rounded-lg border border-stone-300/90 bg-white px-2.5 text-sm text-stone-700 placeholder:font-sans placeholder:text-stone-400 focus:border-stone-500 focus:ring-4 focus:ring-orange-500/15 focus:outline-none"
         />
         <!-- the dot reads filename + suffix as one file name -->
-        <span class="text-sm text-stone-400" aria-hidden="true">.</span>
+        <span
+          class="relative top-0.5 text-xl leading-none font-bold text-stone-600"
+          aria-hidden="true">.</span
+        >
         <div class="w-36 shrink-0 sm:w-44">
           <LangPicker
             bind:value={suffix}
@@ -157,6 +162,14 @@
               </span>
               <button
                 type="button"
+                onclick={() => void onUploadOne(f.id)}
+                disabled={stage.busy || stage.uploadingIds.includes(f.id)}
+                class="shrink-0 rounded-lg px-2 py-2 text-xs font-medium text-stone-600 hover:bg-stone-100 disabled:opacity-40"
+                >{stage.uploadingIds.includes(f.id) ? m.uploading : m.uploadOne}</button
+              >
+              <button
+                type="button"
+                disabled={stage.busy || stage.uploadingIds.includes(f.id)}
                 onclick={() => stage.remove(f.id)}
                 aria-label={m.removeFile}
                 title={m.removeFile}
@@ -168,20 +181,7 @@
           {/each}
         </ul>
 
-        {#if stage.files.length > 1}
-          <label
-            class="squircle flex items-center gap-3 rounded-2xl border border-stone-200 bg-white px-4 py-3"
-          >
-            <span class="shrink-0 text-xs font-medium text-stone-500">{m.zipNameLabel}</span>
-            <input
-              bind:value={stage.zipName}
-              type="text"
-              spellcheck="false"
-              autocomplete="off"
-              class="w-full min-w-0 flex-1 rounded-lg bg-stone-50 px-2.5 py-1.5 text-sm text-stone-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-500/30"
-            />
-          </label>
-        {/if}
+        <p class="px-1 text-xs leading-relaxed text-stone-500">{m.multiUploadHint}</p>
 
         <div class="flex flex-wrap items-center justify-between gap-2 px-1">
           <p class="text-xs text-stone-400">
@@ -192,7 +192,7 @@
             <button
               type="button"
               onclick={() => stage.clear()}
-              disabled={stage.busy}
+              disabled={stage.busy || stage.uploadingIds.length > 0}
               class="squircle h-10 rounded-xl border border-stone-300 px-4 text-sm font-medium text-stone-600 transition-colors hover:bg-stone-50 disabled:pointer-events-none disabled:opacity-40"
             >
               {m.clearFiles}
@@ -200,7 +200,7 @@
             <button
               type="button"
               onclick={() => void onUpload()}
-              disabled={stage.busy || stage.files.length === 0}
+              disabled={stage.busy || stage.uploadingIds.length > 0 || stage.files.length === 0}
               class="flex h-10 items-center gap-2 rounded-lg bg-orange-600 px-5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-orange-700 active:scale-[.98] disabled:pointer-events-none disabled:opacity-40"
             >
               {m.upload}

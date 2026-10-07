@@ -21,6 +21,7 @@ export default defineConfig({
     proxy: {
       "/api": { target: "http://localhost:8787", ws: true },
       "/auth": { target: "http://localhost:8787" },
+      "/f": { target: "http://localhost:8787" },
     },
   },
 });

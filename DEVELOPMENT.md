@@ -29,7 +29,7 @@
 
 ## Testing
 
-`test/worker.test.ts` runs the whole worker inside a real miniflare runtime: auth, item CRUD and idempotency, pagination, WebSocket broadcasts, file upload/download, share links (public access counting, budgets, revocation, uniform 404s), cross-user isolation, and homepage injection with XSS escaping. Touching the worker or `shared/` requires a green run before commit.
+`test/worker.test.ts` runs the whole worker inside a real miniflare runtime: auth, item CRUD and idempotency, pagination, WebSocket broadcasts, file upload/download, share links (password gates, grant invalidation, attempt limits, public access counting, budgets, revocation, uniform 404s, collections, selective ZIP streaming), cross-user isolation, and homepage injection with XSS escaping. Touching the worker or `shared/` requires a green run before commit.
 
 ## Deploying
 

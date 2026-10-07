@@ -14,8 +14,10 @@
   import CardMeta from "#lib/molecules/CardMeta.svelte";
   import ActionMenu from "#lib/molecules/ActionMenu.svelte";
   import LangPicker from "#lib/molecules/LangPicker.svelte";
+  import { fileTypeFromName } from "#shared/file-preview.js";
+  import FileBrowser from "#lib/molecules/FileBrowser.svelte";
   import SharePanel from "#lib/molecules/SharePanel.svelte";
-  import { formatFileSize } from "#lib/format.js";
+  import { formatFileSize } from "#shared/format.js";
   import { spaceCjk } from "#lib/cjk.js";
   import { copyText } from "#lib/clipboard.js";
   import { keys } from "#lib/kbd.js";
@@ -41,7 +43,11 @@
     m: Messages;
     pending: boolean;
     onSave: (text: string, meta: { filename?: string; suffix?: string }) => Promise<boolean>;
-    onShare: (active: boolean, maxDownloads: number | null) => Promise<boolean>;
+    onShare: (
+      active: boolean,
+      maxDownloads: number | null,
+      password?: string | null,
+    ) => Promise<boolean>;
     onDelete: () => Promise<boolean>;
     register?: (id: string, api: CardApi) => () => void;
     confirmDelete?: boolean;
@@ -58,6 +64,19 @@
   let highlighted = $state("");
   let shareOpen = $state(false);
 
+  const cardFiles = $derived(
+    item.kind === "file"
+      ? (item.files ?? [
+          {
+            id: item.id,
+            name: item.fileName ?? "download",
+            size: item.fileSize ?? 0,
+            type: fileTypeFromName(item.fileName ?? ""),
+          },
+        ])
+      : [],
+  );
+  const isCollection = $derived(cardFiles.length > 1);
   const codeLang = $derived(findLanguage(item.kind === "text" ? item.suffix : null));
   let saving = $state(false);
 
@@ -170,7 +189,10 @@
         placeholder={m.filenamePlaceholder}
         class="code-font h-9 min-w-32 flex-1 rounded-lg border border-stone-300/90 bg-white px-2.5 text-sm text-stone-700 placeholder:font-sans placeholder:text-stone-400 focus:border-stone-500 focus:ring-4 focus:ring-orange-500/15 focus:outline-none"
       />
-      <span class="text-sm text-stone-400" aria-hidden="true">.</span>
+      <span
+        class="relative top-0.5 text-xl leading-none font-bold text-stone-600"
+        aria-hidden="true">.</span
+      >
       <div class="w-36 shrink-0 sm:w-44">
         <LangPicker
           bind:value={draftSuffix}
@@ -220,10 +242,12 @@
       {/if}
       {#if item.kind === "file"}
         <a
-          href="/api/files/{item.id}"
+          href={isCollection
+            ? `/api/files/${item.id}/zip`
+            : `/api/files/${item.id}/${cardFiles[0]?.id ?? item.id}`}
           download
-          aria-label={m.download}
-          title={m.download}
+          aria-label={isCollection ? m.downloadZip : m.download}
+          title={isCollection ? m.downloadZip : m.download}
           class="squircle flex size-10 shrink-0 items-center justify-center rounded-xl bg-stone-900 text-white transition-all hover:bg-stone-700 active:scale-[.97]"
         >
           <Icon name="download" size={17} />
@@ -246,13 +270,14 @@
     </div>
 
     {#if item.kind === "file"}
-      <p class="mt-2 flex min-w-0 items-center gap-2 text-base leading-relaxed text-stone-800">
-        <Icon name="fileText" size={18} />
-        <span class="truncate font-medium">{item.fileName}</span>
-        {#if item.fileSize !== undefined}
-          <span class="shrink-0 text-sm text-stone-400">{formatFileSize(item.fileSize)}</span>
-        {/if}
-      </p>
+      {#if isCollection}
+        <p class="mt-2 flex items-center gap-2 text-base text-stone-800">
+          <Icon name="fileText" size={18} /><span class="font-medium"
+            >{cardFiles.length} {m.filesUnit}</span
+          ><span class="text-sm text-stone-400">{formatFileSize(item.fileSize ?? 0)}</span>
+        </p>
+      {/if}
+      <FileBrowser files={cardFiles} base="/api/files/{item.id}" {m} />
     {:else if codeLang}
       <div class="mt-2 overflow-hidden rounded-lg border border-stone-200">
         <div

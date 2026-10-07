@@ -16,153 +16,327 @@
     clearLabel: string;
   } = $props();
 
+  const id = $props.id();
   let root = $state<HTMLDivElement | undefined>();
-  let search = $state<HTMLInputElement | undefined>();
+  let input = $state<HTMLInputElement | undefined>();
+  let list = $state<HTMLUListElement | undefined>();
   let open = $state(false);
-  // panel stays mounted after first open; animation is pure CSS class toggling
-  let everOpened = $state(false);
+  let floating = $state(false);
   let query = $state("");
+  let filtering = $state(false);
   let highlightIndex = $state(0);
+  let above = $state(false);
+  let listHeight = $state(256);
 
-  const display = $derived(LANGUAGES.find((l) => l.suffix === value) ?? null);
   const filtered = $derived(
-    query.trim() === ""
+    !filtering || query.trim() === ""
       ? LANGUAGES
       : LANGUAGES.filter(
           (l) =>
             l.name.toLowerCase().includes(query.trim().toLowerCase()) ||
-            l.suffix.includes(query.trim().toLowerCase()),
+            l.suffix.includes(query.trim().toLowerCase().replace(/^\./, "")),
         ),
   );
+  const activeSuffix = $derived(open ? filtered[highlightIndex]?.suffix : undefined);
+
+  function positionPanel(): void {
+    if (!root) return;
+    const rect = root.getBoundingClientRect();
+    const viewport = window.visualViewport;
+    const top = viewport?.offsetTop ?? 0;
+    const bottom = top + (viewport?.height ?? window.innerHeight);
+    const spaceBelow = bottom - rect.bottom - 12;
+    const spaceAbove = rect.top - top - 12;
+    above = spaceBelow < 160 && spaceAbove > spaceBelow;
+    listHeight = Math.max(0, Math.min(256, (above ? spaceAbove : spaceBelow) - 10));
+  }
 
   function openPanel(): void {
     if (open) return;
-    open = true;
-    everOpened = true;
-    query = "";
+    query = value ?? "";
+    filtering = false;
     highlightIndex = Math.max(
       0,
-      filtered.findIndex((l) => l.suffix === value),
+      LANGUAGES.findIndex((l) => l.suffix === value),
     );
+    positionPanel();
+    floating = true;
+    open = true;
+    input?.select();
   }
 
-  $effect(() => {
-    // focus the search box as soon as the open panel mounts it
-    if (open && search) search.focus();
-  });
   function closePanel(): void {
+    // Keep the results unchanged while the surface fades out.
     open = false;
-    query = "";
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) floating = false;
   }
 
   function pick(suffix: string): void {
-    value = suffix === value ? null : suffix;
+    value = suffix;
+    input?.focus({ preventScroll: true });
     closePanel();
   }
 
-  function onSearchKeydown(e: KeyboardEvent): void {
-    if (e.key === "ArrowDown") {
+  function clear(): void {
+    value = null;
+    query = "";
+    filtering = false;
+    highlightIndex = 0;
+    input?.focus({ preventScroll: true });
+  }
+
+  function onInput(e: Event): void {
+    query = (e.currentTarget as HTMLInputElement).value;
+    filtering = true;
+    highlightIndex = 0;
+    if (!open) {
+      positionPanel();
+      floating = true;
+      open = true;
+    }
+  }
+
+  function onKeydown(e: KeyboardEvent): void {
+    if (e.isComposing) return;
+    if (e.key === "ArrowDown" || e.key === "ArrowUp") {
       e.preventDefault();
-      highlightIndex = Math.min(highlightIndex + 1, filtered.length - 1);
-    } else if (e.key === "ArrowUp") {
-      e.preventDefault();
-      highlightIndex = Math.max(highlightIndex - 1, 0);
-    } else if (e.key === "Enter") {
+      if (!open) {
+        openPanel();
+        return;
+      }
+      const step = e.key === "ArrowDown" ? 1 : -1;
+      highlightIndex = Math.max(0, Math.min(highlightIndex + step, filtered.length - 1));
+    } else if (e.key === "Enter" && open) {
       e.preventDefault();
       const entry = filtered[highlightIndex];
       if (entry) pick(entry.suffix);
-    } else if (e.key === "Escape") {
+    } else if (e.key === "Escape" && open) {
       e.preventDefault();
+      e.stopPropagation();
+      closePanel();
+    } else if (e.key === "Tab") {
       closePanel();
     }
   }
 
-  // click outside closes the panel; the trigger keeps its position
-  $effect(() => {
-    const onPointerDown = (e: PointerEvent): void => {
-      if (open && root && !root.contains(e.target as Node)) closePanel();
+  function onOutsidePointer(e: PointerEvent): void {
+    if (open && root && !root.contains(e.target as Node)) closePanel();
+  }
+
+  function onFocusout(e: FocusEvent): void {
+    if (!root?.contains(e.relatedTarget as Node | null)) closePanel();
+  }
+
+  function trackViewport(): () => void {
+    const viewport = window.visualViewport;
+    const update = (): void => {
+      if (open) positionPanel();
     };
-    window.addEventListener("pointerdown", onPointerDown, true);
-    return () => window.removeEventListener("pointerdown", onPointerDown, true);
+    viewport?.addEventListener("resize", update);
+    viewport?.addEventListener("scroll", update);
+    return () => {
+      viewport?.removeEventListener("resize", update);
+      viewport?.removeEventListener("scroll", update);
+    };
+  }
+
+  $effect(() => {
+    if (!open || !list || !activeSuffix) return;
+    const option = list.querySelector<HTMLButtonElement>(`[data-suffix="${activeSuffix}"]`);
+    if (!option) return;
+    const top = option.offsetTop;
+    const bottom = top + option.offsetHeight;
+    if (top < list.scrollTop) list.scrollTo({ top });
+    else if (bottom > list.scrollTop + list.clientHeight) {
+      list.scrollTo({ top: bottom - list.clientHeight });
+    }
   });
 </script>
 
-<div class="relative" bind:this={root}>
+<svelte:window
+  onpointerdown={onOutsidePointer}
+  onresize={() => open && positionPanel()}
+  onscroll={() => open && positionPanel()}
+/>
+
+<div
+  bind:this={root}
+  {@attach trackViewport}
+  onfocusout={onFocusout}
+  class="picker relative"
+  data-open={open}
+  data-above={above}
+  data-floating={floating ? "" : undefined}
+  style="--list-height: {listHeight}px"
+>
+  <input
+    bind:this={input}
+    value={open ? query : (value ?? "")}
+    onfocus={openPanel}
+    onclick={openPanel}
+    oninput={onInput}
+    onkeydown={onKeydown}
+    role="combobox"
+    aria-label={placeholder}
+    aria-expanded={open}
+    aria-controls="{id}-list"
+    aria-autocomplete="list"
+    aria-activedescendant={activeSuffix ? `${id}-${activeSuffix}` : undefined}
+    placeholder={open && !value ? searchPlaceholder : placeholder}
+    autocomplete="off"
+    spellcheck="false"
+    class="picker-input code-font relative z-10 h-9 w-full rounded-lg border border-stone-300/90 bg-white px-2.5 pr-8 text-sm text-stone-700 placeholder:font-sans placeholder:text-stone-400 hover:border-stone-400 focus:border-stone-500 focus:outline-none"
+  />
   <button
     type="button"
-    onclick={openPanel}
-    class="flex h-9 w-full items-center justify-between gap-1 rounded-lg border border-stone-300/90 bg-white px-2.5 text-left text-sm text-stone-700 transition-colors hover:border-stone-400 focus:border-stone-500 focus:ring-4 focus:ring-orange-500/15 focus:outline-none {open
-      ? 'opacity-0'
-      : ''}"
-    aria-haspopup="listbox"
-    aria-expanded={open}
+    tabindex={value ? 0 : -1}
+    aria-label={value ? clearLabel : searchPlaceholder}
+    aria-expanded={value ? undefined : open}
+    aria-controls={value ? undefined : `${id}-list`}
+    onmousedown={(e) => e.preventDefault()}
+    onclick={() => {
+      if (value) clear();
+      else if (open) closePanel();
+      else input?.focus({ preventScroll: true });
+    }}
+    class="absolute top-1/2 right-1 z-20 flex size-7 -translate-y-1/2 items-center justify-center rounded text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-600 focus-visible:outline-2 focus-visible:outline-orange-500/40"
   >
-    <span class="truncate pr-4 {display ? '' : 'text-stone-400'}">
-      {display ? display.suffix : placeholder}
-    </span>
-  </button>
-  {#if value && !open}
-    <button
-      type="button"
-      class="absolute top-1/2 right-1.5 -translate-y-1/2 rounded p-1 text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-600"
-      aria-label={clearLabel}
-      onclick={(e) => {
-        e.stopPropagation();
-        value = null;
-      }}
+    <svg
+      class="size-3.5"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      aria-hidden="true"
     >
-      <svg
-        class="size-3.5"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2"
-        stroke-linecap="round"
-        aria-hidden="true"
-      >
+      {#if value}
         <path d="M18 6 6 18M6 6l12 12" />
-      </svg>
-    </button>
-  {/if}
+      {:else}
+        <path d={open ? "m6 15 6-6 6 6" : "m6 9 6 6 6-6"} />
+      {/if}
+    </svg>
+  </button>
 
-  {#if everOpened}
-    <div
-      class="squircle absolute top-0 left-0 z-40 w-72 origin-top rounded-xl border border-stone-200 bg-white shadow-lg transition-[opacity,transform] duration-150 ease-out {open
-        ? 'scale-100 opacity-100'
-        : 'pointer-events-none scale-[0.98] -translate-y-1 opacity-0'}"
+  <div
+    class="picker-panel absolute inset-x-0 z-0 rounded-lg border border-stone-400 bg-white shadow-lg"
+    inert={!open}
+    aria-hidden={!open}
+    ontransitionend={(e) => {
+      if (e.target === e.currentTarget && !open) floating = false;
+    }}
+  >
+    <ul
+      bind:this={list}
+      id="{id}-list"
       role="listbox"
+      aria-label={placeholder}
+      class="picker-options relative overflow-y-auto overscroll-contain p-1"
     >
-      <div class="border-b border-stone-100 p-2">
-        <input
-          bind:this={search}
-          bind:value={query}
-          onkeydown={onSearchKeydown}
-          placeholder={searchPlaceholder}
-          class="h-8 w-full rounded bg-stone-100 px-2.5 text-sm text-stone-800 placeholder:text-stone-400 focus:outline-none"
-        />
-      </div>
-      <ul class="max-h-64 overflow-y-auto p-2">
-        {#each filtered as entry, i (entry.suffix)}
-          <li>
-            <button
-              type="button"
-              role="option"
-              aria-selected={entry.suffix === value}
-              class="flex w-full cursor-pointer items-center justify-between rounded px-3 py-2 text-left text-sm transition-colors {entry.suffix ===
-              value
-                ? 'bg-stone-100 font-medium text-stone-900'
-                : 'text-stone-600 hover:bg-stone-100'} {i === highlightIndex ? 'bg-stone-100' : ''}"
-              onclick={() => pick(entry.suffix)}
-              onpointerenter={() => (highlightIndex = i)}
+      {#each filtered as entry, i (entry.suffix)}
+        <li role="presentation">
+          <button
+            type="button"
+            id="{id}-{entry.suffix}"
+            role="option"
+            tabindex="-1"
+            aria-selected={entry.suffix === value}
+            data-suffix={entry.suffix}
+            title="{entry.name} (.{entry.suffix})"
+            onmousedown={(e) => e.preventDefault()}
+            onclick={() => pick(entry.suffix)}
+            onpointerenter={(e) => {
+              if (e.pointerType === "mouse") highlightIndex = i;
+            }}
+            class="flex min-h-9 w-full cursor-pointer items-center justify-between gap-2 rounded px-2 text-left text-sm transition-colors {entry.suffix ===
+            value
+              ? 'font-medium text-stone-900'
+              : 'text-stone-600'} {i === highlightIndex ? 'bg-stone-100' : ''}"
+          >
+            <span class="truncate">{entry.name}</span>
+            <span
+              class="code-font shrink-0 text-xs {entry.suffix === value
+                ? 'text-orange-600'
+                : 'text-stone-400'}">.{entry.suffix}</span
             >
-              <span class="truncate">{entry.name}</span>
-              <span class="ml-3 shrink-0 text-xs text-stone-400">.{entry.suffix}</span>
-            </button>
-          </li>
-        {:else}
-          <li class="px-2 py-4 text-center text-sm text-stone-400">{noResults}</li>
-        {/each}
-      </ul>
-    </div>
-  {/if}
+          </button>
+        </li>
+      {:else}
+        <li role="presentation" class="px-2 py-4 text-center text-sm text-stone-400">
+          {noResults}
+        </li>
+      {/each}
+    </ul>
+  </div>
 </div>
+
+<style>
+  .picker[data-floating] {
+    z-index: 40;
+  }
+
+  .picker-input {
+    transition:
+      border-color 120ms ease,
+      background-color 120ms ease;
+  }
+
+  .picker[data-open="true"] .picker-input {
+    border-color: transparent;
+    background-color: transparent;
+  }
+
+  .picker:focus-within .picker-input {
+    box-shadow: 0 0 0 4px rgb(249 115 22 / 0.15);
+  }
+
+  .picker[data-open="true"]:focus-within .picker-input {
+    box-shadow: none;
+  }
+
+  .picker-panel {
+    top: 0;
+    padding-top: 2.25rem;
+    visibility: hidden;
+    opacity: 0;
+    pointer-events: none;
+    transition:
+      opacity 120ms ease,
+      visibility 0s 120ms;
+  }
+
+  .picker[data-open="true"] .picker-panel {
+    visibility: visible;
+    opacity: 1;
+    pointer-events: auto;
+    transition:
+      opacity 160ms ease,
+      visibility 0s;
+  }
+
+  .picker-options {
+    max-height: var(--list-height);
+    border-top: 1px solid #f5f5f4;
+    scrollbar-width: thin;
+  }
+
+  .picker[data-above="true"] .picker-panel {
+    top: auto;
+    bottom: 0;
+    padding-top: 0;
+    padding-bottom: 2.25rem;
+  }
+
+  .picker[data-above="true"] .picker-options {
+    border-top: 0;
+    border-bottom: 1px solid #f5f5f4;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .picker-input,
+    .picker-panel {
+      transition: none;
+    }
+  }
+</style>

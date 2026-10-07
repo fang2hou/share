@@ -9,7 +9,7 @@
   import LangNav from "#lib/molecules/LangNav.svelte";
   import { FileStage } from "#lib/stage.svelte.js";
   import { messages, pickLang, type Lang } from "#shared/i18n.js";
-  import type { Item } from "#shared/protocol.js";
+  import { MAX_FILE_BYTES, MAX_COLLECTION_FILES, type Item } from "#shared/protocol.js";
   import { SpaceStore } from "#lib/space.svelte.js";
   import { mountFavicon, setFaviconBadge } from "#lib/favicon.js";
   import { dayKey, dayKeyOffset, dayLabel } from "#lib/time.js";
@@ -114,21 +114,50 @@
     clearNoticeId = setTimeout(() => (notice = ""), 4_000);
   }
 
-  async function uploadStaged(): Promise<boolean> {
-    if (stage.busy || stage.files.length === 0) return false;
-    stage.busy = true;
+  async function uploadOne(id: string): Promise<boolean> {
+    const entry = stage.files.find((f) => f.id === id);
+    if (!entry || stage.busy || stage.uploadingIds.includes(id)) return false;
+    if (entry.file.size > MAX_FILE_BYTES) {
+      showNotice(m.fileTooLarge);
+      return false;
+    }
+    stage.uploadingIds.push(id);
     try {
-      const payload = await stage.payload();
-      if ("error" in payload) {
-        if (payload.error === "too_large") showNotice(m.fileTooLarge);
-        return false;
+      entry.collectionId ??= stage.collectionId ?? crypto.randomUUID();
+      const ok = await space.uploadFile(entry.file, entry.id, entry.collectionId);
+      if (ok) stage.remove(id);
+      else showNotice(m.uploadFailed);
+      return ok;
+    } finally {
+      stage.uploadingIds = stage.uploadingIds.filter((f) => f !== id);
+    }
+  }
+
+  async function uploadStaged(): Promise<boolean> {
+    if (stage.busy || stage.uploadingIds.length || stage.files.length === 0) return false;
+    if (stage.files.some((f) => f.file.size > MAX_FILE_BYTES)) {
+      showNotice(m.fileTooLarge);
+      return false;
+    }
+    if (stage.files.length > MAX_COLLECTION_FILES) {
+      showNotice(m.tooManyFiles);
+      return false;
+    }
+    stage.busy = true;
+    // Retain the collection and file IDs after a failure so retrying cannot duplicate uploads.
+    const collectionId: string = stage.collectionId ?? crypto.randomUUID();
+    stage.collectionId = collectionId;
+    try {
+      for (const entry of stage.files.slice()) {
+        entry.collectionId ??= collectionId;
+        if (!(await space.uploadFile(entry.file, entry.id, entry.collectionId))) {
+          showNotice(m.uploadFailed);
+          return false;
+        }
+        stage.remove(entry.id);
+        stage.collectionId = collectionId;
       }
-      const ok = await space.uploadFile(payload.file);
-      if (!ok) {
-        showNotice(m.uploadFailed);
-        return false;
-      }
-      stage.clear();
+      if (stage.files.length === 0) stage.clear();
       return true;
     } finally {
       stage.busy = false;
@@ -296,8 +325,7 @@
   onfocusin={onCardFocusIn}
   class="mx-auto max-w-3xl space-y-4 py-6 pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] pb-[max(1.5rem,env(safe-area-inset-bottom))]"
 >
-  <!-- flex-wrap keeps the header safe if the mode switcher ever outgrows a
-       viewport; on touch the language picker is a collapsed trigger pill -->
+  <!-- The language menu uses the same compact trigger on all devices. -->
   <header class="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
     <div class="flex items-center gap-3">
       <!-- wordmark in OG-image style; the period doubles as the status dot -->
@@ -316,6 +344,7 @@
     onSubmit={(text, meta) => space.create(text, meta)}
     onError={() => showNotice(m.sendFailed)}
     onUpload={uploadStaged}
+    onUploadOne={uploadOne}
   />
   <p aria-live="polite" class="min-h-5 text-sm">
     {#if notice}
@@ -370,7 +399,8 @@
             {m}
             pending={space.pending.some((p) => p.id === item.id)}
             onSave={(text, meta) => space.update(item.id, text, meta)}
-            onShare={(active, maxDownloads) => space.setShare(item.id, active, maxDownloads)}
+            onShare={(active, maxDownloads, password) =>
+              space.setShare(item.id, active, maxDownloads, password)}
             onDelete={() => handleDelete(item.id)}
             register={registerCard}
             confirmDelete={confirmDeleteId === item.id}

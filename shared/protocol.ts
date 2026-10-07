@@ -8,7 +8,12 @@ export const SHARE_TOKEN_PATTERN = /^[A-Za-z0-9_-]{22,43}$/;
 export const FILENAME_PATTERN = /^[^\\/:*?"<>|]{1,64}$/;
 export const SUFFIX_PATTERN = /^[a-z][a-z0-9+#-]{0,15}$/;
 
+export const MAX_COLLECTION_FILES = 100;
+
+export type StoredFile = { id: string; name: string; size: number; type: string };
+
 export type ShareState = {
+  passwordProtected: boolean;
   active: boolean;
   /** owner-only: token and link path are only ever returned to the item's owner session */
   token?: string;
@@ -26,6 +31,7 @@ export type Item = {
   kind: "text" | "file";
   fileName?: string;
   fileSize?: number;
+  files?: StoredFile[];
   /** text snippets only: optional download filename */
   filename?: string;
   /** text snippets only: optional language suffix, e.g. "cpp" */
