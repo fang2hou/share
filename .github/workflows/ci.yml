@@ -34,19 +34,34 @@ jobs:
         run: mise run test
 
   commit-history:
-    name: Validate commit history
+    name: Validate commit messages
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v5
-        with:
-          fetch-depth: 0
-          # PR events check out the synthetic merge ref by default; cog must see real commits only
-          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.ref }}
       - name: Install toolchain (mise)
         uses: jdx/mise-action@v4
-      - name: Check Conventional Commits (cog)
-        run: cog check
+      # PRs squash-merge, so branch commits are work-in-progress: the
+      # conventional-commit contract applies to the PR title — the message
+      # the squash will actually produce. cog verify needs no checkout.
+      - name: Verify PR title (cog)
+        if: github.event_name == 'pull_request'
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: cog verify "$PR_TITLE"
+      # on main every commit is a squash of a validated PR title; check the
+      # fresh commits only (depth 2, full history on a brand-new repo)
+      - uses: actions/checkout@v5
+        if: github.event_name == 'push'
+        with:
+          fetch-depth: 2
+      - name: Verify pushed commits (cog)
+        if: github.event_name == 'push'
+        run: |
+          if git rev-parse --verify HEAD~1 >/dev/null 2>&1; then
+            cog check HEAD~1..HEAD
+          else
+            cog check
+          fi
 
   deploy:
     name: Deploy to Cloudflare
