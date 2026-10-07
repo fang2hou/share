@@ -79,7 +79,7 @@
   {#if mode === "text"}
     <div class="space-y-2.5">
       <div
-        class="squircle rounded-2xl border border-stone-300/90 bg-white shadow-sm transition focus-within:border-stone-500 focus-within:ring-4 focus-within:ring-orange-500/15"
+        class="squircle rounded-2xl border border-stone-300/90 bg-white transition focus-within:border-stone-500 focus-within:ring-4 focus-within:ring-orange-500/15"
       >
         <!-- svelte-ignore a11y_autofocus -->
         <textarea
@@ -100,7 +100,7 @@
           bind:value={filename}
           maxlength={64}
           placeholder={m.filenamePlaceholder}
-          class="code-font h-9 min-w-32 flex-1 rounded-lg border border-stone-300/90 bg-white px-2.5 text-sm text-stone-700 shadow-sm placeholder:font-sans placeholder:text-stone-400 focus:border-stone-500 focus:ring-4 focus:ring-orange-500/15 focus:outline-none"
+          class="code-font h-9 min-w-32 flex-1 rounded-lg border border-stone-300/90 bg-white px-2.5 text-sm text-stone-700 placeholder:font-sans placeholder:text-stone-400 focus:border-stone-500 focus:ring-4 focus:ring-orange-500/15 focus:outline-none"
         />
         <!-- the dot reads filename + suffix as one file name -->
         <span class="text-sm text-stone-400" aria-hidden="true">.</span>
@@ -134,9 +134,7 @@
       </label>
 
       {#if stage.files.length > 0}
-        <ul
-          class="squircle divide-y divide-stone-100 rounded-2xl border border-stone-200 bg-white shadow-sm"
-        >
+        <ul class="squircle divide-y divide-stone-100 rounded-2xl border border-stone-200 bg-white">
           {#each stage.files as f (f.id)}
             <li class="flex items-center gap-3 px-3 py-2.5">
               {#if f.preview}
@@ -167,7 +165,7 @@
 
         {#if stage.files.length > 1}
           <label
-            class="squircle flex items-center gap-3 rounded-2xl border border-stone-200 bg-white px-4 py-3 shadow-sm"
+            class="squircle flex items-center gap-3 rounded-2xl border border-stone-200 bg-white px-4 py-3"
           >
             <span class="shrink-0 text-xs font-medium text-stone-500">{m.zipNameLabel}</span>
             <input
