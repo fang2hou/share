@@ -91,7 +91,7 @@
   <button
     type="button"
     onclick={openPanel}
-    class="flex h-9 w-full items-center justify-between gap-1 rounded-lg border border-stone-300/90 bg-white px-2.5 text-left text-sm text-stone-700 transition-colors hover:border-stone-400 focus:border-stone-500 focus:ring-4 focus:ring-orange-500/15 focus:outline-none {open
+    class="flex h-9 w-full items-center justify-between gap-1 rounded-lg border border-stone-300/90 bg-white px-2.5 text-left text-sm text-stone-700 shadow-sm transition-colors hover:border-stone-400 focus:border-stone-500 focus:ring-4 focus:ring-orange-500/15 focus:outline-none {open
       ? 'opacity-0'
       : ''}"
     aria-haspopup="listbox"
