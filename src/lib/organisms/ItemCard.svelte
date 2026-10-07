@@ -266,8 +266,12 @@
             </span>
           {/if}
         </div>
-        <pre
-          class="code-font scroll-autohide hljs overflow-x-auto bg-stone-50 p-3 text-[13px] leading-relaxed text-stone-800">{#if highlighted}{@html highlighted}{:else}{item.text}{/if}</pre>
+        {#if highlighted}
+          {@html highlighted}
+        {:else}
+          <pre
+            class="code-font m-0 overflow-x-auto bg-stone-50 p-3 text-[13px] leading-relaxed text-stone-800">{item.text}</pre>
+        {/if}
       </div>
     {:else}
       <p class="mt-2 text-base leading-relaxed break-words whitespace-pre-wrap text-stone-800">

@@ -202,60 +202,21 @@ html[data-mode-from="file"] {
   font-family: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
 }
 
-/* highlight.js token theme tuned to the cream/ink/orange palette */
-.hljs {
-  color: #1c1917;
+/* shiki emits a complete <pre class="shiki"> with inline theme colors;
+   the card owns background and scrolling, so neutralize the rest */
+pre.shiki {
+  margin: 0;
+  padding: 0.75rem;
+  background-color: #fafaf9 !important;
+  color: inherit;
+  font-family: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 13px;
+  line-height: 1.625;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
 }
-.hljs-comment,
-.hljs-quote {
-  color: #a8a29e;
-  font-style: italic;
-}
-.hljs-keyword,
-.hljs-selector-tag,
-.hljs-literal,
-.hljs-doctag,
-.hljs-formula {
-  color: #b45309;
-}
-.hljs-string,
-.hljs-regexp,
-.hljs-addition,
-.hljs-attribute,
-.hljs-meta .hljs-string {
-  color: #15803d;
-}
-.hljs-number,
-.hljs-variable,
-.hljs-template-variable,
-.hljs-type,
-.hljs-selector-class,
-.hljs-selector-attr,
-.hljs-selector-pseudo {
-  color: #0e7490;
-}
-.hljs-title,
-.hljs-section,
-.hljs-title.class_,
-.hljs-title.function_ {
-  color: #9a3412;
-}
-.hljs-attr,
-.hljs-property,
-.hljs-params,
-.hljs-built_in,
-.hljs-builtin-name,
-.hljs-symbol,
-.hljs-bullet,
-.hljs-link {
-  color: #4338ca;
-}
-.hljs-deletion {
-  color: #b91c1c;
-}
-.hljs-emphasis {
-  font-style: italic;
-}
-.hljs-strong {
-  font-weight: 600;
+
+pre.shiki code {
+  font-family: inherit;
 }

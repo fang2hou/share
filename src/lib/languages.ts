@@ -1,46 +1,47 @@
-// curated snippet-language registry: suffix -> display name + highlight.js module
+// curated snippet-language registry: suffix -> display name + shiki grammar
 export type LanguageDef = {
   /** canonical stored suffix, e.g. "cpp" */
   suffix: string;
   /** display name shown in tags and the picker */
   name: string;
-  /** highlight.js module name (differs for aliases like html -> xml) */
-  hljs: string;
+  /** shiki grammar id (VS Code language id) */
+  id: string;
 };
 
 export const LANGUAGES: LanguageDef[] = [
-  { suffix: "ts", name: "TypeScript", hljs: "typescript" },
-  { suffix: "tsx", name: "TSX", hljs: "typescript" },
-  { suffix: "js", name: "JavaScript", hljs: "javascript" },
-  { suffix: "jsx", name: "JSX", hljs: "javascript" },
-  { suffix: "svelte", name: "Svelte", hljs: "xml" },
-  { suffix: "astro", name: "Astro", hljs: "xml" },
-  { suffix: "vue", name: "Vue", hljs: "xml" },
-  { suffix: "cpp", name: "C++", hljs: "cpp" },
-  { suffix: "c", name: "C", hljs: "c" },
-  { suffix: "go", name: "Go", hljs: "go" },
-  { suffix: "rs", name: "Rust", hljs: "rust" },
-  { suffix: "java", name: "Java", hljs: "java" },
-  { suffix: "kt", name: "Kotlin", hljs: "kotlin" },
-  { suffix: "swift", name: "Swift", hljs: "swift" },
-  { suffix: "objc", name: "Objective-C", hljs: "objectivec" },
-  { suffix: "php", name: "PHP", hljs: "php" },
-  { suffix: "rb", name: "Ruby", hljs: "ruby" },
-  { suffix: "html", name: "HTML", hljs: "xml" },
-  { suffix: "css", name: "CSS", hljs: "css" },
-  { suffix: "scss", name: "SCSS", hljs: "scss" },
-  { suffix: "yaml", name: "YAML", hljs: "yaml" },
-  { suffix: "toml", name: "TOML", hljs: "ini" },
-  { suffix: "sql", name: "SQL", hljs: "sql" },
-  { suffix: "sh", name: "Shell", hljs: "bash" },
-  { suffix: "md", name: "Markdown", hljs: "markdown" },
-  { suffix: "xml", name: "XML", hljs: "xml" },
-  { suffix: "dockerfile", name: "Dockerfile", hljs: "dockerfile" },
-  { suffix: "diff", name: "Diff", hljs: "diff" },
-  { suffix: "lua", name: "Lua", hljs: "lua" },
-  { suffix: "r", name: "R", hljs: "r" },
-  { suffix: "scala", name: "Scala", hljs: "scala" },
-  { suffix: "dart", name: "Dart", hljs: "dart" },
+  { suffix: "ts", name: "TypeScript", id: "typescript" },
+  { suffix: "tsx", name: "TSX", id: "tsx" },
+  { suffix: "js", name: "JavaScript", id: "javascript" },
+  { suffix: "jsx", name: "JSX", id: "jsx" },
+  { suffix: "svelte", name: "Svelte", id: "svelte" },
+  { suffix: "astro", name: "Astro", id: "astro" },
+  { suffix: "vue", name: "Vue", id: "vue" },
+  { suffix: "cpp", name: "C++", id: "cpp" },
+  { suffix: "c", name: "C", id: "c" },
+  { suffix: "go", name: "Go", id: "go" },
+  { suffix: "rs", name: "Rust", id: "rust" },
+  { suffix: "java", name: "Java", id: "java" },
+  { suffix: "kt", name: "Kotlin", id: "kotlin" },
+  { suffix: "swift", name: "Swift", id: "swift" },
+  { suffix: "objc", name: "Objective-C", id: "objective-c" },
+  { suffix: "php", name: "PHP", id: "php" },
+  { suffix: "rb", name: "Ruby", id: "ruby" },
+  { suffix: "html", name: "HTML", id: "html" },
+  { suffix: "css", name: "CSS", id: "css" },
+  { suffix: "scss", name: "SCSS", id: "scss" },
+  { suffix: "json", name: "JSON", id: "json" },
+  { suffix: "yaml", name: "YAML", id: "yaml" },
+  { suffix: "toml", name: "TOML", id: "toml" },
+  { suffix: "sql", name: "SQL", id: "sql" },
+  { suffix: "sh", name: "Shell", id: "shellscript" },
+  { suffix: "md", name: "Markdown", id: "markdown" },
+  { suffix: "xml", name: "XML", id: "xml" },
+  { suffix: "dockerfile", name: "Dockerfile", id: "dockerfile" },
+  { suffix: "diff", name: "Diff", id: "diff" },
+  { suffix: "lua", name: "Lua", id: "lua" },
+  { suffix: "r", name: "R", id: "r" },
+  { suffix: "scala", name: "Scala", id: "scala" },
+  { suffix: "dart", name: "Dart", id: "dart" },
 ];
 
 // alternative suffixes resolve to the same definition, e.g. "typescript" -> ts

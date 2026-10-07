@@ -38,6 +38,7 @@ const dayKeyFmt = new Intl.DateTimeFormat("en-CA", {
   day: "2-digit",
 });
 const dayLabelCache = new Map<Lang, Intl.DateTimeFormat>();
+const zhWeekCache = new Intl.DateTimeFormat("zh-CN", { weekday: "narrow" });
 
 // local calendar day key (YYYY-MM-DD) — grouping boundary is the viewer's own timezone
 export function dayKey(ts: number): string {
@@ -45,6 +46,16 @@ export function dayKey(ts: number): string {
 }
 
 export function dayLabel(ts: number, lang: Lang): string {
+  // ICU gives ja/ko a parenthesized weekday (10月7日（水）) but zh none at all;
+  // assemble it ourselves so all CJK locales read the same way
+  if (lang === "zh-CN" || lang === "zh-TW") {
+    let dtf = dayLabelCache.get(lang);
+    if (!dtf) {
+      dtf = new Intl.DateTimeFormat(lang, { month: "long", day: "numeric" });
+      dayLabelCache.set(lang, dtf);
+    }
+    return `${dtf.format(ts)}（${zhWeekCache.format(ts)}）`;
+  }
   let dtf = dayLabelCache.get(lang);
   if (!dtf) {
     dtf = new Intl.DateTimeFormat(lang, { month: "long", day: "numeric", weekday: "short" });
