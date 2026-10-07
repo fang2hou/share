@@ -292,6 +292,13 @@
 >
   <!-- flex-wrap keeps the header safe if the mode switcher ever outgrows a
        viewport; on touch the language picker is a collapsed trigger pill -->
+  <header class="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+    <div class="flex items-center gap-3">
+      <StatusDot status={space.status} />
+      <ModeSwitcher {mode} onPick={setMode} labelText={m.modeText} labelFiles={m.modeFiles} />
+    </div>
+    <LangNav {lang} label={m.changeLanguage} onPick={setLang} />
+  </header>
   <Composer
     {m}
     {mode}

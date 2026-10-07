@@ -77,7 +77,7 @@
 
 {#if mode === "text"}
   <div
-    class="vt-composer squircle rounded-2xl border border-stone-300/90 bg-white shadow-sm transition focus-within:border-stone-500 focus-within:ring-4 focus-within:ring-orange-500/15"
+    class="vt-composer squircle relative z-20 rounded-2xl border border-stone-300/90 bg-white shadow-sm transition focus-within:border-stone-500 focus-within:ring-4 focus-within:ring-orange-500/15"
   >
     <!-- svelte-ignore a11y_autofocus -->
     <textarea
