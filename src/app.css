@@ -54,6 +54,13 @@ html:lang(ko) {
   view-transition-name: composer;
 }
 
+/* cards are named through the --vt-item custom property set inline per card;
+   the property is invalid at computed-value time when unset, which leaves
+   view-transition-name as none for anything that is not a card */
+article[data-card-id] {
+  view-transition-name: var(--vt-item, none);
+}
+
 html[data-mode-from="text"] {
   --vt-out-x: -28px;
   --vt-in-x: 28px;

@@ -149,6 +149,7 @@
 
 <article
   data-card-id={item.id}
+  style="--vt-item: item-{item.id}"
   class="squircle relative rounded-2xl border border-stone-200/80 bg-white p-4 shadow-sm transition-opacity {pending
     ? 'opacity-60'
     : ''}"

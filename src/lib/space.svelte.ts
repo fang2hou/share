@@ -1,3 +1,4 @@
+import { flushSync } from "svelte";
 import { WS_PING, WS_PONG, type Item, type ServerMessage } from "#shared/protocol.js";
 
 export class SpaceStore {
@@ -16,6 +17,28 @@ export class SpaceStore {
   #destroyed = false;
   #local = new Set<string>();
   #onRemote: ((item: Item) => void) | undefined;
+  // sink the list through a View Transition: named cards glide to their new
+  // spot while the newcomer fades in; no transition off-tab or unsupported,
+  // and never two at once — an overlapping transition is skipped by the
+  // browser mid-flight, which races the DOM update, so we just mutate
+  #vtBusy = false;
+  #sink(mutate: () => void): void {
+    if (
+      this.#vtBusy ||
+      typeof document === "undefined" ||
+      typeof document.startViewTransition !== "function" ||
+      document.visibilityState !== "visible"
+    ) {
+      mutate();
+      return;
+    }
+    this.#vtBusy = true;
+    const t = document.startViewTransition(() => flushSync(mutate));
+    const done = (): void => {
+      this.#vtBusy = false;
+    };
+    t.finished.then(done, done);
+  }
 
   #onVisibility = (): void => {
     if (this.#destroyed || document.visibilityState !== "visible") return;
@@ -56,7 +79,8 @@ export class SpaceStore {
   }
 
   upsert(item: Item): void {
-    this.pending = this.pending.filter((p) => p.id !== item.id);
+    const pendingHit = this.pending.some((p) => p.id === item.id);
+    if (pendingHit) this.pending = this.pending.filter((p) => p.id !== item.id);
     const index = this.items.findIndex((i) => i.id === item.id);
     if (index >= 0) {
       const existing = this.items[index];
@@ -67,12 +91,20 @@ export class SpaceStore {
     }
     let insertAt = this.items.findIndex((i) => i.createdAt < item.createdAt);
     if (insertAt < 0) insertAt = this.items.length;
-    this.items.splice(insertAt, 0, item);
+    // local echo: the pending card is already on screen at this spot, animating
+    // its confirmed twin again would replay the sink for no visual reason
+    if (this.#local.delete(item.id)) {
+      this.items.splice(insertAt, 0, item);
+      return;
+    }
+    this.#sink(() => this.items.splice(insertAt, 0, item));
   }
 
   remove(ids: string[]): void {
     const removed = new Set(ids);
-    this.items = this.items.filter((i) => !removed.has(i.id));
+    this.#sink(() => {
+      this.items = this.items.filter((i) => !removed.has(i.id));
+    });
   }
 
   async refresh(): Promise<void> {
@@ -130,6 +162,9 @@ export class SpaceStore {
     const id = crypto.randomUUID();
     this.#local.add(id);
     const now = Date.now();
+    // the optimistic card must render synchronously: a View Transition defers
+    // this mutation behind its capture step, and the POST's own upsert can
+    // then land first, producing the same key in both pending and items
     this.pending.unshift({
       id,
       text,
