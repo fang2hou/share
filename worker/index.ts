@@ -8,8 +8,11 @@ import {
   SHARE_TOKEN_PATTERN,
   SUFFIX_PATTERN,
 } from "../shared/protocol.ts";
-import type { Item } from "../shared/protocol.ts";
 import { messages, pickLang, type Lang } from "../shared/i18n.ts";
+
+import { fileResponse, zipResponse, selectedFiles, readFile } from "./file-transfer.ts";
+import { fileView, passwordView, publicFiles } from "./share-view.ts";
+import { grantCookie, hasGrant } from "./share-password.ts";
 
 export { Space } from "./space.ts";
 
@@ -28,19 +31,6 @@ async function readJsonBody(request: Request): Promise<Record<string, unknown> |
 
 function bodyLength(request: Request): number {
   return Number(request.headers.get("Content-Length") ?? "");
-}
-
-/** R2 body → attachment response; shared by the owner download and the public share path */
-function fileResponse(obj: R2ObjectBody, item: Item, cacheControl: string): Response {
-  const name = item.fileName ?? "download";
-  const asciiFallback = name.replace(/[^\x20-\x7e]/g, "_").replace(/"/g, "");
-  return new Response(obj.body, {
-    headers: {
-      "content-type": obj.httpMetadata?.contentType ?? "application/octet-stream",
-      "content-disposition": `attachment; filename="${asciiFallback}"; filename*=UTF-8''${encodeURIComponent(name)}`,
-      "cache-control": cacheControl,
-    },
-  });
 }
 
 async function homepage(request: Request, env: Env): Promise<Response> {
@@ -173,31 +163,81 @@ async function api(request: Request, env: Env, url: URL): Promise<Response> {
       fileName = "";
     }
     if (fileName.length === 0 || fileName.length > 255) return jsonError("bad_request", 400);
+    const collectionId = request.headers.get("x-collection-id");
+    if (
+      collectionId !== null &&
+      (!ID_PATTERN.test(collectionId) ||
+        collectionId === id ||
+        !(await stub.collectionCanAccept(collectionId, id)))
+    )
+      return jsonError("bad_request", 400);
+    if (!(await stub.fileCanUpload(id, collectionId ?? undefined)))
+      return jsonError("bad_request", 400);
     const key = "gh:" + session.sub + "/" + id;
+    let stored: R2Object | null;
     try {
-      await env.FILES.put(key, request.body, {
+      // File IDs are immutable; retries must never replace bytes already accepted by R2.
+      stored = await env.FILES.put(key, request.body, {
+        onlyIf: { etagDoesNotMatch: "*" },
         httpMetadata: {
           contentType: request.headers.get("content-type") ?? "application/octet-stream",
         },
+        customMetadata: { itemId: collectionId ?? id, name: encodeURIComponent(fileName) },
       });
+      stored ??= await env.FILES.head(key);
     } catch {
       return jsonError("upload_failed", 500);
     }
-    const item = await stub.createFile(id, { fileName, fileSize: length, fileKey: key });
+    if (!stored) return jsonError("upload_failed", 500);
+    if (
+      stored.customMetadata?.itemId !== (collectionId ?? id) &&
+      (collectionId || stored.customMetadata?.itemId)
+    )
+      return jsonError("bad_request", 400);
+    const name = stored.customMetadata?.name
+      ? decodeURIComponent(stored.customMetadata.name)
+      : fileName;
+    const item = collectionId
+      ? await stub.addCollectionFile(collectionId, {
+          id,
+          name,
+          size: stored.size,
+          type: stored.httpMetadata?.contentType ?? "application/octet-stream",
+        })
+      : await stub.createFile(id, { fileName: name, fileSize: stored.size, fileKey: key });
+    if (!item) {
+      if (await stub.fileCanUpload(id)) await env.FILES.delete(key);
+      return jsonError("bad_request", 400);
+    }
     return Response.json({ item }, { status: 201 });
   }
 
-  const fileMatch = path.match(/^\/api\/files\/([^/]+)$/);
+  const fileMatch = path.match(/^\/api\/files\/([^/]+)(?:\/([^/]+))?$/);
   if (fileMatch) {
     if (request.method !== "GET") return jsonError("method_not_allowed", 405);
     if (request.headers.get("Sec-Fetch-Site") === "cross-site") return jsonError("forbidden", 403);
     const fileId = fileMatch[1];
     if (!fileId || !ID_PATTERN.test(fileId)) return jsonError("bad_request", 400);
-    const file = await stub.getFile(fileId);
+    const memberId = fileMatch[2];
+    if (memberId === "zip") {
+      const item = await stub.getItem(fileId);
+      if (!item || item.kind !== "file") return jsonError("not_found", 404);
+      const files = selectedFiles(publicFiles(item), url.searchParams.get("ids"));
+      if (!files) return jsonError("bad_request", 400);
+      return zipResponse(env.FILES, session.sub, files);
+    }
+    if (memberId && !ID_PATTERN.test(memberId)) return jsonError("bad_request", 400);
+    const file = await stub.getFile(fileId, memberId);
     if (!file) return jsonError("not_found", 404);
-    const obj = await env.FILES.get(file.fileKey);
+    const obj = await readFile(env.FILES, file.fileKey, request.headers.get("Range"));
     if (!obj) return jsonError("not_found", 404);
-    return fileResponse(obj, file.item, "private, no-store");
+    return fileResponse(
+      obj,
+      file.item,
+      "private, no-store",
+      url.searchParams.get("preview") === "1",
+      request.headers.has("Range"),
+    );
   }
 
   const itemMatch = path.match(/^\/api\/items\/([^/]+)$/);
@@ -209,7 +249,9 @@ async function api(request: Request, env: Env, url: URL): Promise<Response> {
       const removed = await stub.removeItem(itemId);
       if (!removed) return jsonError("not_found", 404);
       // inline await: when the response returns, the stored bytes are already gone
-      if (removed.fileKey !== null) await env.FILES.delete(removed.fileKey);
+      const keys = [...removed.fileKeys];
+      if (removed.fileKey !== null) keys.push(removed.fileKey);
+      if (keys.length) await env.FILES.delete(keys);
       return Response.json({ ok: true });
     }
     if (request.method === "PATCH") {
@@ -238,6 +280,8 @@ async function api(request: Request, env: Env, url: URL): Promise<Response> {
     const shareId = shareMatch[1];
     if (!shareId || !ID_PATTERN.test(shareId)) return jsonError("bad_request", 400);
     if (!originAllowed(request, env)) return jsonError("forbidden", 403);
+    if (!bodyLength(request) || bodyLength(request) > MAX_BODY_BYTES)
+      return jsonError("bad_request", 400);
     const body = await readJsonBody(request);
     if (!body || typeof body.active !== "boolean") return jsonError("bad_request", 400);
     let max: number | null = null;
@@ -252,7 +296,18 @@ async function api(request: Request, env: Env, url: URL): Promise<Response> {
       }
       max = body.maxDownloads;
     }
-    const item = await stub.setShare(shareId, { active: body.active, maxDownloads: max });
+    const password = body.password;
+    if (
+      password !== undefined &&
+      password !== null &&
+      (typeof password !== "string" || password.length < 6 || password.length > 128)
+    )
+      return jsonError("bad_request", 400);
+    const item = await stub.setShare(shareId, {
+      active: body.active,
+      maxDownloads: max,
+      password: password as string | null | undefined,
+    });
     if (item === null) return jsonError("not_found", 404);
     return Response.json({ item });
   }
@@ -289,11 +344,94 @@ async function publicShare(
   env: Env,
   sub: string,
   token: string,
+  action: string = "",
 ): Promise<Response> {
   if (!/^\d+$/.test(sub) || !SHARE_TOKEN_PATTERN.test(token)) {
     return new Response("Not Found", { status: 404, headers: { "cache-control": "no-store" } });
   }
-  const result = await env.SPACE.getByName("gh:" + sub).accessShared(token);
+  const stub = env.SPACE.getByName("gh:" + sub);
+  const path = `/f/${sub}.${token}`;
+  const url = new URL(request.url);
+  const lang = requestLang(request);
+  const m = messages[lang];
+  const notFound = (): Response =>
+    new Response("Not Found", {
+      status: 404,
+      headers: { "cache-control": "no-store", "x-robots-tag": "noindex" },
+    });
+  if (action === "/unlock") {
+    if (
+      request.method !== "POST" ||
+      !originAllowed(request, env) ||
+      bodyLength(request) < 1 ||
+      bodyLength(request) > 4096
+    )
+      return notFound();
+    let password: string | File | null;
+    try {
+      password = (await request.formData()).get("password");
+    } catch {
+      return notFound();
+    }
+    if (typeof password !== "string" || password.length < 6 || password.length > 128)
+      return notFound();
+    const hash = await stub.unlockShared(token, password);
+    if (!hash) return notFound();
+    const cookie = await grantCookie(env.SESSION_SECRET, path, hash, url.protocol === "https:");
+    return request.headers.get("Accept") === "application/json"
+      ? Response.json(
+          { ok: true },
+          { headers: { "set-cookie": cookie, "cache-control": "no-store" } },
+        )
+      : new Response(null, {
+          status: 303,
+          headers: {
+            "set-cookie": cookie,
+            Location: path + "?view=1",
+            "cache-control": "no-store",
+          },
+        });
+  }
+  if (request.method !== "GET") return notFound();
+  const info = await stub.inspectShared(token);
+  if (!info) return notFound();
+  if (
+    info.passwordHash &&
+    !(await hasGrant(request, env.SESSION_SECRET, path, info.passwordHash))
+  ) {
+    return action === "" ? passwordView(lang, m, path) : notFound();
+  }
+  if (info.item.kind === "file") {
+    if (
+      action === "" &&
+      (info.item.files || info.passwordHash || url.searchParams.get("view") === "1")
+    )
+      return fileView(lang, m, publicFiles(info.item), path);
+    if (action === "/zip") {
+      const files = selectedFiles(publicFiles(info.item), url.searchParams.get("ids"));
+      if (!files) return notFound();
+      const access = await stub.accessShared(token, info.passwordHash);
+      if (!access || access.exhausted) return notFound();
+      return zipResponse(env.FILES, sub, files);
+    }
+    const member = action.startsWith("/files/") ? action.slice(7) : undefined;
+    if (action && (!member || !ID_PATTERN.test(member))) return notFound();
+    const file = await stub.getFile(info.item.id, member);
+    if (!file) return notFound();
+    const obj = await readFile(env.FILES, file.fileKey, request.headers.get("Range"));
+    if (!obj) return notFound();
+    const access = await stub.accessShared(token, info.passwordHash);
+    if (!access || access.exhausted) return notFound();
+    return fileResponse(
+      obj,
+      file.item,
+      "no-store",
+      url.searchParams.get("preview") === "1",
+      request.headers.has("Range"),
+    );
+  }
+  if (action) return notFound();
+  const result = await stub.accessShared(token, info.passwordHash);
   // uniform 404 for missing, disabled, wrong token, and exhausted budget alike — no enumeration oracle
   if (result === null || result.exhausted) {
     return new Response("Not Found", {
@@ -302,18 +440,6 @@ async function publicShare(
     });
   }
   const { item } = result;
-  if (item.kind === "file") {
-    if (result.fileKey === null)
-      return new Response("Not Found", { status: 404, headers: { "cache-control": "no-store" } });
-    const obj = await env.FILES.get(result.fileKey);
-    if (!obj)
-      return new Response("Not Found", { status: 404, headers: { "cache-control": "no-store" } });
-    const res = fileResponse(obj, item, "no-store");
-    res.headers.set("x-robots-tag", "noindex");
-    return res;
-  }
-  const lang = requestLang(request);
-  const m = messages[lang];
   // preview card: first line as the title, a longer slice as the description
   const firstLine = item.text.split("\n").find((l) => l.trim().length > 0) ?? "";
   const title =
@@ -371,14 +497,11 @@ export default {
     const url = new URL(request.url);
     const path = url.pathname;
     if (path === "/" && request.method === "GET") return homepage(request, env);
-    const sharePath = path.match(/^\/f\/(\d+)\.([A-Za-z0-9_-]{22,43})$/);
-    if (
-      sharePath &&
-      sharePath[1] !== undefined &&
-      sharePath[2] !== undefined &&
-      request.method === "GET"
-    )
-      return publicShare(request, env, sharePath[1], sharePath[2]);
+    const sharePath = path.match(
+      /^\/f\/(\d+)\.([A-Za-z0-9_-]{22,43})(\/unlock|\/zip|\/files\/[^/]+)?$/,
+    );
+    if (sharePath && sharePath[1] !== undefined && sharePath[2] !== undefined)
+      return publicShare(request, env, sharePath[1], sharePath[2], sharePath[3]);
     if (path === "/auth/login" && request.method === "GET")
       return await loginRedirect(request, env);
     if (path === "/auth/callback" && request.method === "GET") return handleCallback(request, env);

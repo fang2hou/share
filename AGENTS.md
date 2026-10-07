@@ -25,9 +25,9 @@ Follow the [ai-coding-guidelines](https://github.com/fang2hou/ai-coding-guidelin
 
 ## Layout
 
-- `shared/` — the only code imported by both sides: `protocol.ts` (types, constants) and `i18n.ts` (message catalogs)
+- `shared/` — the only code imported by both sides: `protocol.ts` (types, constants), `i18n.ts` (message catalogs), `file-preview.ts` (preview classification), and `format.ts` (file sizes)
 - `worker/` — Cloudflare Worker: `index.ts` routing, `auth.ts` sessions and GitHub OAuth, `space.ts` the Durable Object
-- `src/lib/` — frontend-only library, layered by atomic design: `atoms/` (Icon, StatusDot), `molecules/` (ModeSwitcher, LangNav, CardMeta, ActionMenu, SharePanel), `organisms/` (Composer, ItemCard, UploadCard), plus plain modules `space.svelte.ts` (state, WS, uploads), `files.ts` (upload payload), `time.ts`, `format.ts`, `clipboard.ts`
+- `src/lib/` — frontend-only library, layered by atomic design: `atoms/` (Icon, StatusDot), `molecules/` (ModeSwitcher, LangNav, CardMeta, ActionMenu, SharePanel), `organisms/` (Composer, ItemCard, UploadCard), plus plain modules `space.svelte.ts` (state, WS, uploads), `stage.svelte.ts` (file staging and collections), `time.ts`, `clipboard.ts`
 - `src/routes/` — the SPA page (SSR off, prerendered shell)
 - `test/` — vitest-pool-workers integration tests against a real miniflare runtime
 

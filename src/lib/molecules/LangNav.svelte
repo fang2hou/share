@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { tick } from "svelte";
   import type { Lang } from "#shared/i18n.js";
   import Icon from "#lib/atoms/Icon.svelte";
 
@@ -12,388 +13,121 @@
     onPick: (lang: Lang) => void;
   } = $props();
 
-  const LANGS: { id: Lang; short: string; full: string }[] = [
-    { id: "zh-CN", short: "简", full: "简体中文" },
-    { id: "zh-TW", short: "繁", full: "繁體中文" },
-    { id: "ja", short: "日", full: "日本語" },
-    { id: "ko", short: "한", full: "한국어" },
-    { id: "en", short: "En", full: "English" },
+  const LANGS: { id: Lang; short: string; name: string }[] = [
+    { id: "zh-CN", short: "简", name: "简体中文" },
+    { id: "zh-TW", short: "繁", name: "繁體中文" },
+    { id: "ja", short: "日", name: "日本語" },
+    { id: "ko", short: "한", name: "한국어" },
+    { id: "en", short: "En", name: "English" },
   ];
-
-  const current = $derived(LANGS.find((l) => l.id === lang) ?? LANGS[0]!);
-
-  let nav = $state<HTMLElement | undefined>();
-
-  /* touch: the strip is a dropdown opened by tapping the trigger;
-     hover devices expand on hover exactly as before */
+  const current = $derived(LANGS.find((language) => language.id === lang) ?? LANGS[0]!);
+  const menuId = $props.id();
   let open = $state(false);
+  let nav: HTMLElement;
+  let trigger: HTMLButtonElement;
 
-  function toggle(): void {
-    open = !open;
-  }
-
-  function pick(next: Lang): void {
-    onPick(next);
+  function close(restoreFocus = false): void {
     open = false;
+    if (restoreFocus) trigger.focus();
   }
 
-  function onWindowClick(e: MouseEvent): void {
-    if (open && nav && !nav.contains(e.target as Node)) open = false;
+  async function openFromKeyboard(event: KeyboardEvent): Promise<void> {
+    if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
+    event.preventDefault();
+    open = true;
+    await tick();
+    const options = nav.querySelectorAll<HTMLButtonElement>('[role="menuitemradio"]');
+    options[event.key === "ArrowUp" ? options.length - 1 : 0]?.focus();
   }
 
-  function onWindowKeydown(e: KeyboardEvent): void {
-    if (e.key === "Escape") open = false;
+  function onMenuKeydown(event: KeyboardEvent): void {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      event.stopPropagation();
+      close(true);
+      return;
+    }
+    if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) return;
+    event.preventDefault();
+    const options = [
+      ...(event.currentTarget as HTMLElement).querySelectorAll<HTMLButtonElement>("button"),
+    ];
+    const index = options.indexOf(document.activeElement as HTMLButtonElement);
+    const next =
+      event.key === "Home"
+        ? 0
+        : event.key === "End"
+          ? options.length - 1
+          : (index + (event.key === "ArrowDown" ? 1 : -1) + options.length) % options.length;
+    options[next]?.focus();
   }
-
-  // the thumb slides under whichever button is selected, following width changes
-  // as the strip collapses (short label) and expands (full labels on hover)
-  $effect(() => {
-    if (!nav) return;
-    const selected = nav.querySelector<HTMLButtonElement>(`[data-lang="${lang}"]`);
-    if (!selected) return;
-    const place = () => {
-      nav?.style.setProperty("--thumb-left", `${selected.offsetLeft}px`);
-      nav?.style.setProperty("--thumb-width", `${selected.offsetWidth}px`);
-    };
-    place();
-    const observer = new ResizeObserver(place);
-    observer.observe(selected);
-    observer.observe(nav);
-    return () => observer.disconnect();
-  });
-
-  // while the strip is expanding or collapsing, the thumb must track the
-  // button every frame; a CSS transition here lags the shrinking container
-  // and the thumb visually detaches. Selection changes in the steady state
-  // keep the sliding transition.
-  // state (not classList) so the compiler keeps the .tracking CSS rule alive
-  let tracking = $state(false);
-  let settleId: number | undefined;
-  function trackLive(): void {
-    tracking = true;
-    clearTimeout(settleId);
-    settleId = setTimeout(() => (tracking = false), 350);
-  }
-
-  // clicking a language leaves the button focused, and :focus-within keeps the
-  // strip expanded after the pointer leaves. Drop pointer-acquired focus half
-  // a second after hover-out so the strip shrinks on its own; keyboard focus
-  // (tabbing) is never blurred.
-  let focusFromPointer = false;
-  let collapseId: number | undefined;
-
-  function onEnter(): void {
-    trackLive();
-    clearTimeout(collapseId);
-  }
-
-  function onLeave(): void {
-    trackLive();
-    clearTimeout(collapseId);
-    collapseId = setTimeout(() => {
-      if (!focusFromPointer) return;
-      focusFromPointer = false;
-      (nav?.querySelector(":focus") as HTMLElement | null)?.blur();
-    }, 500);
-  }
-
-  $effect(() => {
-    return () => {
-      clearTimeout(collapseId);
-    };
-  });
 </script>
 
-<svelte:window onclick={onWindowClick} onkeydown={onWindowKeydown} />
+<svelte:window
+  onclick={(event) => {
+    if (open && !nav.contains(event.target as Node)) close();
+  }}
+  onkeydown={(event) => {
+    if (open && event.key === "Escape") close(true);
+  }}
+/>
 
 <nav
-  bind:this={nav}
-  class="langnav"
-  class:tracking
-  class:open
-  onpointerenter={onEnter}
-  onpointerleave={onLeave}
-  onpointerdown={() => (focusFromPointer = true)}
-  onfocusin={trackLive}
-  onfocusout={trackLive}
+  {@attach (element) => {
+    nav = element;
+  }}
+  class="relative shrink-0"
+  onfocusout={(event) => {
+    if (!nav.contains(event.relatedTarget as Node | null)) close();
+  }}
 >
   <button
+    {@attach (element) => {
+      trigger = element;
+    }}
     type="button"
-    class="langtrigger"
-    onclick={toggle}
-    aria-expanded={open}
-    aria-haspopup="true"
+    aria-label={label}
     title={label}
+    aria-haspopup="menu"
+    aria-expanded={open}
+    aria-controls={menuId}
+    onclick={() => (open = !open)}
+    onkeydown={openFromKeyboard}
+    class="flex min-h-9 min-w-11 cursor-pointer items-center justify-center rounded-full border border-stone-200/80 bg-white p-0.5 shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-500 pointer-coarse:min-h-11"
   >
-    <span class="langtrigger-label">{current.short}</span>
-    <Icon name="chevronDown" size={14} />
+    <span
+      class="flex h-7 min-w-9 items-center justify-center rounded-full bg-stone-900 px-3 text-xs font-medium text-white select-none"
+      >{current.short}</span
+    >
   </button>
-  <div class="strip">
-    <span class="thumb" aria-hidden="true"></span>
-    {#each LANGS as l (l.id)}
-      <button
-        type="button"
-        data-lang={l.id}
-        onclick={() => pick(l.id)}
-        aria-pressed={lang === l.id}
-        title={l.full}
-        class="langbtn {lang === l.id ? 'is-selected' : ''}"
-      >
-        {#if lang === l.id}
-          <span class="short">{l.short}</span>
-        {/if}
-        <span class="full">{l.full}</span>
-      </button>
-    {/each}
-  </div>
+  {#if open}
+    <div
+      id={menuId}
+      role="menu"
+      tabindex="-1"
+      aria-label={label}
+      onkeydown={onMenuKeydown}
+      class="absolute top-full right-0 z-50 mt-2 w-40 max-w-[calc(100vw-2rem)] rounded-xl border border-stone-200 bg-white p-1.5 shadow-lg"
+    >
+      {#each LANGS as language (language.id)}
+        <button
+          type="button"
+          role="menuitemradio"
+          aria-checked={lang === language.id}
+          lang={language.id}
+          onclick={() => {
+            onPick(language.id);
+            close(true);
+          }}
+          class="flex min-h-11 w-full cursor-pointer items-center justify-between gap-3 rounded-lg px-3 text-left text-sm select-none hover:bg-stone-100 focus-visible:bg-stone-100 focus-visible:outline-none {lang ===
+          language.id
+            ? 'font-semibold text-orange-600'
+            : 'text-stone-600'}"
+        >
+          {language.name}
+          {#if lang === language.id}<Icon name="check" size={15} />{/if}
+        </button>
+      {/each}
+    </div>
+  {/if}
 </nav>
-
-<style>
-  .langnav {
-    position: relative;
-    padding: 0.125rem;
-    /* the thumb may lag the collapsing strip; clipping keeps it inside so the
-       collapse reads as one glide to the right instead of a fling past the edge */
-    overflow: hidden;
-    border-radius: 9999px;
-    border: 1px solid rgb(231 229 228 / 0.8);
-    background: #fff;
-    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  }
-
-  /* touch-only trigger: hidden wherever hover can expand the strip */
-  .langtrigger {
-    display: none;
-  }
-
-  .strip {
-    display: flex;
-    align-items: center;
-  }
-
-  .thumb {
-    position: absolute;
-    top: 0.125rem;
-    bottom: 0.125rem;
-    left: var(--thumb-left, 0.25rem);
-    width: var(--thumb-width, 0px);
-    border-radius: 9999px;
-    background: rgb(28 25 23);
-    transition:
-      left 0.25s ease-out,
-      width 0.25s ease-out;
-  }
-
-  .langnav.tracking .thumb {
-    transition: none;
-  }
-
-  .langbtn {
-    position: relative;
-    z-index: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 1.75rem;
-    padding-inline: 0.75rem;
-    border-radius: 9999px;
-    font-size: 0.75rem;
-    line-height: 1;
-    font-weight: 500;
-    white-space: nowrap;
-    color: rgb(120 113 108);
-    transition:
-      color 0.2s ease,
-      max-width 0.25s ease-out,
-      padding-inline 0.25s ease-out,
-      opacity 0.2s ease-out,
-      visibility 0s;
-  }
-
-  .langbtn:hover {
-    color: rgb(41 37 36);
-  }
-
-  .langbtn.is-selected {
-    color: #fff;
-  }
-
-  /* clipped container eats outer focus rings; draw the ring inside instead */
-  .langbtn:focus-visible {
-    outline: 2px solid rgb(249 115 22);
-    outline-offset: -2px;
-  }
-
-  /* collapsed: only the selected language shows, as its short label; hidden
-     buttons stay visible until the collapse animation has finished */
-  .langnav:not(:hover):not(:focus-within) .langbtn:not(.is-selected) {
-    max-width: 0;
-    padding-inline: 0;
-    opacity: 0;
-    visibility: hidden;
-    transition:
-      color 0.2s ease,
-      max-width 0.25s ease-out,
-      padding-inline 0.25s ease-out,
-      opacity 0.2s ease-out,
-      visibility 0s linear 0.25s;
-  }
-
-  /* selected label cross-fades short -> full as the strip expands */
-  .langbtn > .short,
-  .langbtn > .full {
-    transition:
-      max-width 0.25s ease-out,
-      opacity 0.15s ease-out;
-  }
-
-  .langbtn > .short {
-    max-width: 3em;
-  }
-
-  .langbtn > .full {
-    max-width: 0;
-    opacity: 0;
-  }
-
-  .langnav:hover .langbtn > .full,
-  .langnav:focus-within .langbtn > .full {
-    max-width: 7em;
-    opacity: 1;
-    transition-delay: 0.05s;
-  }
-
-  .langnav:hover .langbtn > .short,
-  .langnav:focus-within .langbtn > .short {
-    max-width: 0;
-    opacity: 0;
-  }
-
-  /* devices without hover: hover cannot expand the strip, and an always-open
-     strip pushes the header to two rows. Collapse to a trigger pill; the strip
-     becomes a dropdown overlay anchored to it. */
-  @media (hover: none) {
-    .langnav {
-      padding: 0;
-      border: 0;
-      background: none;
-      box-shadow: none;
-      overflow: visible;
-    }
-
-    .langnav.tracking .thumb {
-      transition: none;
-    }
-
-    .langtrigger {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.25rem;
-      height: 2.25rem;
-      padding-inline: 0.875rem;
-      border-radius: 9999px;
-      border: 1px solid rgb(231 229 228 / 0.8);
-      background: #fff;
-      box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-      font-size: 0.75rem;
-      font-weight: 600;
-      color: rgb(68 64 60);
-      transition: border-color 0.2s ease;
-    }
-
-    .langtrigger:focus-visible {
-      outline: 2px solid rgb(249 115 22);
-      outline-offset: 2px;
-    }
-
-    .langtrigger :global(svg) {
-      color: rgb(168 162 158);
-      transition: transform 0.2s ease-out;
-    }
-
-    .langnav.open .langtrigger :global(svg) {
-      transform: rotate(180deg);
-    }
-
-    .thumb {
-      display: none;
-    }
-
-    .strip {
-      position: absolute;
-      top: calc(100% + 0.5rem);
-      right: 0;
-      z-index: 40;
-      flex-direction: column;
-      align-items: stretch;
-      min-width: 9rem;
-      padding: 0.375rem;
-      border-radius: 0.75rem;
-      border: 1px solid rgb(231 229 228 / 0.9);
-      background: #fff;
-      box-shadow:
-        0 4px 6px -1px rgb(0 0 0 / 0.08),
-        0 10px 15px -3px rgb(0 0 0 / 0.1);
-      opacity: 0;
-      visibility: hidden;
-      transform: translateY(-0.25rem);
-      pointer-events: none;
-      transition:
-        opacity 0.15s ease-out,
-        transform 0.15s ease-out,
-        visibility 0s linear 0.15s;
-    }
-
-    .langnav.open .strip {
-      opacity: 1;
-      visibility: visible;
-      transform: none;
-      pointer-events: auto;
-      transition-delay: 0s;
-    }
-
-    .langbtn {
-      justify-content: flex-start;
-      height: 2.25rem;
-      max-width: none;
-      padding-inline: 0.75rem;
-      border-radius: 0.5rem;
-      font-size: 0.8125rem;
-      opacity: 1;
-      visibility: visible;
-    }
-
-    .langbtn > .short {
-      display: none;
-    }
-
-    .langbtn > .full {
-      max-width: none;
-      opacity: 1;
-    }
-
-    .langbtn.is-selected {
-      color: rgb(234 88 12);
-      font-weight: 600;
-    }
-
-    /* neutralize the desktop collapse rule inside the dropdown */
-    .langnav:not(:hover):not(:focus-within) .langbtn:not(.is-selected) {
-      max-width: none;
-      padding-inline: 0.75rem;
-      opacity: 1;
-      visibility: visible;
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .thumb,
-    .langbtn,
-    .langbtn > .short,
-    .langbtn > .full,
-    .strip,
-    .langtrigger :global(svg) {
-      transition-duration: 0.01ms;
-    }
-  }
-</style>

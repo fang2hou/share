@@ -1,6 +1,8 @@
 import { SELF, env, runInDurableObject } from "cloudflare:test";
 import { describe, expect, it } from "vitest";
+import { unzipSync } from "fflate";
 import { signSession } from "../worker/auth.ts";
+import { Space } from "../worker/space.ts";
 import type { Item, ServerMessage } from "../shared/protocol.ts";
 
 const BASE = "http://example.com";
@@ -597,5 +599,386 @@ describe("delete api", () => {
       headers: { Cookie: cookie, Origin: ORIGIN },
     });
     expect(unknown.status).toBe(404);
+  });
+});
+
+describe("password sharing and file collections", () => {
+  async function share(
+    cookie: string,
+    id: string,
+    password: string | null,
+    maxDownloads: number | null = null,
+  ): Promise<Item> {
+    const res = await SELF.fetch(BASE + `/api/items/${id}/share`, {
+      method: "POST",
+      headers: { Cookie: cookie, Origin: ORIGIN },
+      body: JSON.stringify({ active: true, password, maxDownloads }),
+    });
+    expect(res.status).toBe(200);
+    const body = await res.text();
+    if (password) expect(body).not.toContain(password);
+    return (JSON.parse(body) as CreatedItem).item;
+  }
+
+  async function unlock(url: string, password: string, origin = ORIGIN): Promise<Response> {
+    return SELF.fetch(url + "/unlock", {
+      method: "POST",
+      redirect: "manual",
+      headers: { Origin: origin, "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ password }).toString(),
+    });
+  }
+
+  async function upload(
+    cookie: string,
+    collection: string,
+    id: string,
+    name: string,
+    bytes: string,
+    type = "text/plain",
+  ): Promise<Item> {
+    const res = await SELF.fetch(BASE + "/api/files", {
+      method: "POST",
+      headers: {
+        Cookie: cookie,
+        Origin: ORIGIN,
+        "x-id": id,
+        "x-file-name": encodeURIComponent(name),
+        "x-collection-id": collection,
+        "content-type": type,
+      },
+      body: bytes,
+    });
+    expect(res.status).toBe(201);
+    return ((await res.json()) as CreatedItem).item;
+  }
+
+  it("keeps protected content private and invalidates grants when the password changes", async () => {
+    const cookie = await sessionCookie("991");
+    const id = crypto.randomUUID();
+    await postItem(cookie, id, "confidential-text-991");
+    const item = await share(cookie, id, "First-secret-991");
+    expect(item.share?.passwordProtected).toBe(true);
+    const url = BASE + item.share!.url;
+    const challenge = await SELF.fetch(url, { headers: { "Accept-Language": "ja" } });
+    const html = await challenge.text();
+    expect(html).toContain('lang="ja"');
+    expect(html).not.toContain("confidential-text-991");
+    expect(html).not.toContain("First-secret-991");
+    expect((await unlock(url, "wrong-password")).status).toBe(404);
+    expect((await unlock(url, "First-secret-991", "https://evil.example")).status).toBe(404);
+    const grant = await unlock(url, "First-secret-991");
+    expect(grant.status).toBe(303);
+    expect(grant.headers.get("Set-Cookie")).toContain("HttpOnly; SameSite=Lax");
+    const accessCookie = grant.headers.get("Set-Cookie")!.split(";")[0]!;
+    expect(await (await SELF.fetch(url, { headers: { Cookie: accessCookie } })).text()).toContain(
+      "confidential-text-991",
+    );
+    const otherId = crypto.randomUUID();
+    await postItem(cookie, otherId, "another-protected-share");
+    const otherShare = await share(cookie, otherId, "First-secret-991");
+    expect(
+      await (
+        await SELF.fetch(BASE + otherShare.share!.url, { headers: { Cookie: accessCookie } })
+      ).text(),
+    ).not.toContain("another-protected-share");
+    const tampered = accessCookie.slice(0, -1) + (accessCookie.endsWith("0") ? "1" : "0");
+    expect(await (await SELF.fetch(url, { headers: { Cookie: tampered } })).text()).not.toContain(
+      "confidential-text-991",
+    );
+    await share(cookie, id, "Second-secret-991");
+    expect(
+      await (await SELF.fetch(url, { headers: { Cookie: accessCookie } })).text(),
+    ).not.toContain("confidential-text-991");
+    expect((await unlock(url, "First-secret-991")).status).toBe(404);
+    const second = await unlock(url, "Second-secret-991");
+    expect(second.status).toBe(303);
+    await SELF.fetch(BASE + `/api/items/${id}/share`, {
+      method: "POST",
+      headers: { Cookie: cookie, Origin: ORIGIN },
+      body: JSON.stringify({ active: false }),
+    });
+    expect(
+      (
+        await SELF.fetch(url, {
+          headers: { Cookie: second.headers.get("Set-Cookie")!.split(";")[0]! },
+        })
+      ).status,
+    ).toBe(404);
+  });
+
+  it("persists an unlock attempt limit without charging the download budget", async () => {
+    const cookie = await sessionCookie("992");
+    const id = crypto.randomUUID();
+    await postItem(cookie, id, "attempt-limit-content");
+    const item = await share(cookie, id, "Actual-secret-992", 1);
+    const url = BASE + item.share!.url;
+    for (let i = 0; i < 10; i++) expect((await unlock(url, "wrong-password")).status).toBe(404);
+    expect((await unlock(url, "Actual-secret-992")).status).toBe(404);
+    await runInDurableObject(env.SPACE.getByName("gh:992"), (instance, state) => {
+      const row = state.storage.sql
+        .exec<{ share_downloads: number; share_attempts: number; share_password_hash: string }>(
+          "SELECT share_downloads, share_attempts, share_password_hash FROM items WHERE id = ?",
+          id,
+        )
+        .one();
+      expect(row.share_downloads).toBe(0);
+      expect(row.share_attempts).toBe(10);
+      expect(row.share_password_hash).not.toContain("Actual-secret-992");
+      expect(row.share_password_hash).toMatch(/^[a-f0-9]{32}\.[a-f0-9]{64}$/);
+      state.storage.sql.exec(
+        "UPDATE items SET share_attempt_at = ? WHERE id = ?",
+        Date.now() - 61_000,
+        id,
+      );
+      expect(instance.list().items[0]?.share?.downloads).toBe(0);
+    });
+    expect((await unlock(url, "Actual-secret-992")).status).toBe(303);
+  });
+
+  it("uploads members independently, retries without duplicates, selects ZIP entries, and deletes all bytes", async () => {
+    const cookie = await sessionCookie("993");
+    const other = await sessionCookie("994");
+    const collection = crypto.randomUUID();
+    const first = crypto.randomUUID();
+    const second = crypto.randomUUID();
+    await upload(cookie, collection, first, "same.txt", "first-bytes");
+    const item = await upload(cookie, collection, second, "same.txt", "second-bytes");
+    const retry = await upload(cookie, collection, second, "same.txt", "second-bytes");
+    expect(retry.files).toHaveLength(2);
+    await upload(cookie, collection, second, "renamed.txt", "changed-byte-count");
+    expect(item.fileSize).toBe(23);
+    expect(
+      await (
+        await SELF.fetch(BASE + `/api/files/${collection}/${first}`, {
+          headers: { Cookie: cookie },
+        })
+      ).text(),
+    ).toBe("first-bytes");
+    const archive = await SELF.fetch(BASE + `/api/files/${collection}/zip`, {
+      headers: { Cookie: cookie },
+    });
+    expect(archive.headers.get("Content-Type")).toBe("application/zip");
+    const entries = unzipSync(new Uint8Array(await archive.arrayBuffer()));
+    expect(Object.keys(entries)).toEqual(["same.txt", "2-same.txt"]);
+    expect(new TextDecoder().decode(entries["2-same.txt"])).toBe("second-bytes");
+    const selected = await SELF.fetch(BASE + `/api/files/${collection}/zip?ids=${second}`, {
+      headers: { Cookie: cookie },
+    });
+    const selectedEntries = unzipSync(new Uint8Array(await selected.arrayBuffer()));
+    expect(Object.keys(selectedEntries)).toEqual(["same.txt"]);
+    expect(new TextDecoder().decode(selectedEntries["same.txt"])).toBe("second-bytes");
+    expect(
+      (
+        await SELF.fetch(BASE + `/api/files/${collection}/zip?ids=${crypto.randomUUID()}`, {
+          headers: { Cookie: cookie },
+        })
+      ).status,
+    ).toBe(400);
+    for (const suffix of [first, "zip"])
+      expect(
+        (
+          await SELF.fetch(BASE + `/api/files/${collection}/${suffix}`, {
+            headers: { Cookie: other },
+          })
+        ).status,
+      ).toBe(404);
+    const removed = await SELF.fetch(BASE + `/api/items/${collection}`, {
+      method: "DELETE",
+      headers: { Cookie: cookie, Origin: ORIGIN },
+    });
+    expect(removed.status).toBe(200);
+    expect(await env.FILES.get(`gh:993/${first}`)).toBeNull();
+    expect(await env.FILES.get(`gh:993/${second}`)).toBeNull();
+  });
+
+  it("requires a scoped grant for previews and ZIPs and charges only successful transfers", async () => {
+    const cookie = await sessionCookie("995");
+    const collection = crypto.randomUUID();
+    const first = crypto.randomUUID();
+    const second = crypto.randomUUID();
+    await upload(
+      cookie,
+      collection,
+      first,
+      "private.html",
+      "<script>alert(1)</script>",
+      "text/html",
+    );
+    await upload(cookie, collection, second, "private.txt", "private-file-bytes");
+    const item = await share(cookie, collection, "Collection-secret-995", 2);
+    const url = BASE + item.share!.url;
+    expect(await (await SELF.fetch(url)).text()).not.toContain("private.html");
+    for (const suffix of [`/files/${first}`, `/files/${first}?preview=1`, "/zip"])
+      expect((await SELF.fetch(url + suffix)).status).toBe(404);
+    const grant = await unlock(url, "Collection-secret-995");
+    const accessCookie = grant.headers.get("Set-Cookie")!.split(";")[0]!;
+    const headers = { Cookie: accessCookie };
+    const page = await SELF.fetch(url, { headers });
+    expect(await page.text()).toContain("private.html");
+    expect((await SELF.fetch(url + `/files/${crypto.randomUUID()}`, { headers })).status).toBe(404);
+    expect((await SELF.fetch(url + "/zip?ids=", { headers })).status).toBe(404);
+    const preview = await SELF.fetch(url + `/files/${first}?preview=1`, { headers });
+    expect(preview.headers.get("Content-Type")).toBe("text/plain; charset=utf-8");
+    expect(preview.headers.get("Content-Security-Policy")).toContain("sandbox");
+    expect(await preview.text()).toBe("<script>alert(1)</script>");
+    const zip = await SELF.fetch(url + `/zip?ids=${second}`, { headers });
+    expect(
+      new TextDecoder().decode(unzipSync(new Uint8Array(await zip.arrayBuffer()))["private.txt"]),
+    ).toBe("private-file-bytes");
+    expect((await SELF.fetch(url + `/files/${second}`, { headers })).status).toBe(404);
+    const listed = (await (
+      await SELF.fetch(BASE + "/api/items", { headers: { Cookie: cookie } })
+    ).json()) as ItemList;
+    expect(listed.items[0]?.share?.downloads).toBe(2);
+  });
+
+  it("keeps link-only collections available and rejects collection collisions with text items", async () => {
+    const cookie = await sessionCookie("996");
+    const collection = crypto.randomUUID();
+    const file = crypto.randomUUID();
+    await upload(cookie, collection, file, "open.txt", "open-bytes");
+    const item = await share(cookie, collection, null);
+    expect(item.share?.passwordProtected).toBe(false);
+    const url = BASE + item.share!.url;
+    expect(await (await SELF.fetch(url)).text()).toContain("open.txt");
+    expect(await (await SELF.fetch(url + `/files/${file}`)).text()).toBe("open-bytes");
+    const textId = crypto.randomUUID();
+    await postItem(cookie, textId, "retain-text");
+    const rejected = await SELF.fetch(BASE + "/api/files", {
+      method: "POST",
+      headers: {
+        Cookie: cookie,
+        Origin: ORIGIN,
+        "x-id": crypto.randomUUID(),
+        "x-collection-id": textId,
+        "x-file-name": "collision.txt",
+      },
+      body: "file-bytes",
+    });
+    expect(rejected.status).toBe(400);
+    const listed = (await (
+      await SELF.fetch(BASE + "/api/items", { headers: { Cookie: cookie } })
+    ).json()) as ItemList;
+    expect(listed.items.find((i) => i.id === textId)?.text).toBe("retain-text");
+  });
+});
+
+describe("file preview compatibility", () => {
+  it("serves byte ranges and prevents active documents from executing", async () => {
+    const cookie = await sessionCookie("997");
+    const id = crypto.randomUUID();
+    const put = await SELF.fetch(BASE + "/api/files", {
+      method: "POST",
+      headers: {
+        Cookie: cookie,
+        Origin: ORIGIN,
+        "x-id": id,
+        "x-file-name": "media.mp4",
+        "content-type": "video/mp4",
+      },
+      body: "0123456789",
+    });
+    expect(put.status).toBe(201);
+    const range = await SELF.fetch(BASE + `/api/files/${id}?preview=1`, {
+      headers: { Cookie: cookie, Range: "bytes=2-5" },
+    });
+    expect(range.status).toBe(206);
+    expect(range.headers.get("Content-Range")).toBe("bytes 2-5/10");
+    expect(range.headers.get("Accept-Ranges")).toBe("bytes");
+    expect(new TextDecoder().decode(await range.arrayBuffer())).toBe("2345");
+    const tail = await SELF.fetch(BASE + `/api/files/${id}`, {
+      headers: { Cookie: cookie, Range: "bytes=-3" },
+    });
+    expect(new TextDecoder().decode(await tail.arrayBuffer())).toBe("789");
+    const invalid = await SELF.fetch(BASE + `/api/files/${id}`, {
+      headers: { Cookie: cookie, Range: "bytes=100-" },
+    });
+    expect(invalid.status).toBe(404);
+    const svgId = crypto.randomUUID();
+    await SELF.fetch(BASE + "/api/files", {
+      method: "POST",
+      headers: {
+        Cookie: cookie,
+        Origin: ORIGIN,
+        "x-id": svgId,
+        "x-file-name": "unsafe.svg",
+        "content-type": "image/svg+xml",
+      },
+      body: '<svg onload="alert(1)"></svg>',
+    });
+    const svg = await SELF.fetch(BASE + `/api/files/${svgId}?preview=1`, {
+      headers: { Cookie: cookie },
+    });
+    expect(svg.headers.get("Content-Disposition")).toContain("attachment;");
+    expect(svg.headers.get("X-Content-Type-Options")).toBe("nosniff");
+  });
+
+  it("keeps member storage separate from other collections and standalone items", async () => {
+    const cookie = await sessionCookie("998");
+    const firstCollection = crypto.randomUUID();
+    const secondCollection = crypto.randomUUID();
+    const id = crypto.randomUUID();
+    const headers = {
+      Cookie: cookie,
+      Origin: ORIGIN,
+      "x-id": id,
+      "x-file-name": "original.txt",
+      "x-collection-id": firstCollection,
+    };
+    expect(
+      (await SELF.fetch(BASE + "/api/files", { method: "POST", headers, body: "original" })).status,
+    ).toBe(201);
+    expect(
+      (
+        await SELF.fetch(BASE + "/api/files", {
+          method: "POST",
+          headers: { ...headers, "x-collection-id": secondCollection },
+          body: "replaced",
+        })
+      ).status,
+    ).toBe(400);
+    const singleHeaders = {
+      Cookie: cookie,
+      Origin: ORIGIN,
+      "x-id": id,
+      "x-file-name": "original.txt",
+    };
+    expect(
+      (
+        await SELF.fetch(BASE + "/api/files", {
+          method: "POST",
+          headers: singleHeaders,
+          body: "replaced",
+        })
+      ).status,
+    ).toBe(400);
+    expect(
+      await (
+        await SELF.fetch(BASE + `/api/files/${firstCollection}/${id}`, {
+          headers: { Cookie: cookie },
+        })
+      ).text(),
+    ).toBe("original");
+  });
+});
+
+it("applies additive schema migrations repeatedly without losing existing records", async () => {
+  const stub = env.SPACE.getByName("gh:999");
+  const id = crypto.randomUUID();
+  await stub.create(id, "preserve-existing-record", "record", "txt");
+  await runInDurableObject(stub, (_instance, state) => {
+    const first = new Space(state, env);
+    const second = new Space(state, env);
+    expect(first.list().items[0]?.text).toBe("preserve-existing-record");
+    expect(second.list().items[0]?.filename).toBe("record");
+    const row = state.storage.sql
+      .exec<{
+        files_json: string | null;
+        share_password_hash: string | null;
+        share_attempts: number;
+      }>("SELECT files_json, share_password_hash, share_attempts FROM items WHERE id = ?", id)
+      .one();
+    expect(row).toEqual({ files_json: null, share_password_hash: null, share_attempts: 0 });
   });
 });

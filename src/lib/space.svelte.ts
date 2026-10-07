@@ -142,12 +142,17 @@ export class SpaceStore {
     }
   }
 
-  async setShare(id: string, active: boolean, maxDownloads: number | null): Promise<boolean> {
+  async setShare(
+    id: string,
+    active: boolean,
+    maxDownloads: number | null,
+    password?: string | null,
+  ): Promise<boolean> {
     try {
       const res = await fetch("/api/items/" + id + "/share", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ active, maxDownloads }),
+        body: JSON.stringify({ active, maxDownloads, password }),
       });
       if (res.status !== 200) return false;
       const data = (await res.json()) as { item: Item };
@@ -242,9 +247,12 @@ export class SpaceStore {
   }
 
   // upload with real progress; the file goes to /api/files as the raw body (R2-backed)
-  async uploadFile(file: File): Promise<boolean> {
-    const id = crypto.randomUUID();
-    this.#local.add(id);
+  async uploadFile(
+    file: File,
+    id: string = crypto.randomUUID(),
+    collectionId?: string,
+  ): Promise<boolean> {
+    this.#local.add(collectionId ?? id);
     this.uploads.unshift({ id, name: file.name, size: file.size, progress: 0 });
     const { promise, resolve, reject } = Promise.withResolvers<{
       status: number;
@@ -255,6 +263,7 @@ export class SpaceStore {
     xhr.responseType = "json";
     xhr.setRequestHeader("content-type", file.type || "application/octet-stream");
     xhr.setRequestHeader("x-id", id);
+    if (collectionId) xhr.setRequestHeader("x-collection-id", collectionId);
     xhr.setRequestHeader("x-file-name", encodeURIComponent(file.name));
     xhr.upload.onprogress = (e) => {
       if (!e.lengthComputable) return;

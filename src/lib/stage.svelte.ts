@@ -1,16 +1,20 @@
-import { buildUploadPayload, defaultZipName, type UploadPayload } from "#lib/files.js";
-
-export type StagedFile = { id: string; file: File; preview: string | null };
+export type StagedFile = {
+  id: string;
+  file: File;
+  preview: string | null;
+  collectionId?: string;
+};
 
 /**
  * Client-side staging area for file uploads: drops, pastes, and picker
  * selections accumulate here instead of uploading immediately, so the user
- * can review, remove, rename the package, and confirm in one go.
+ * can review and upload files individually or as a collection.
  */
 export class FileStage {
   files = $state<StagedFile[]>([]);
-  zipName = $state(defaultZipName(new Date()));
+  collectionId = $state<string | undefined>();
   busy = $state(false);
+  uploadingIds = $state<string[]>([]);
 
   #urls: string[] = [];
 
@@ -27,23 +31,17 @@ export class FileStage {
     const entry = this.files.find((f) => f.id === id);
     if (entry?.preview) URL.revokeObjectURL(entry.preview);
     this.files = this.files.filter((f) => f.id !== id);
+    if (this.files.length === 0) this.collectionId = undefined;
   }
 
   clear(): void {
     for (const url of this.#urls) URL.revokeObjectURL(url);
     this.#urls = [];
     this.files = [];
-    this.zipName = defaultZipName(new Date());
+    this.collectionId = undefined;
   }
 
   totalBytes = $derived(this.files.reduce((sum, f) => sum + f.file.size, 0));
-
-  payload(): Promise<UploadPayload> {
-    return buildUploadPayload(
-      this.files.map((f) => f.file),
-      { zipName: this.zipName },
-    );
-  }
 
   dispose(): void {
     for (const url of this.#urls) URL.revokeObjectURL(url);
