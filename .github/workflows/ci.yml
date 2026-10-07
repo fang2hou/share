@@ -38,13 +38,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      # mise's cocogitto plugin resolves a broken bin path on linux-x64, so
-      # pull the official static musl binary instead; mise stays for the other
-      # jobs
-      - name: Install cog
-        run: |
-          curl -fsSL https://github.com/cocogitto/cocogitto/releases/latest/download/cocogitto-7.0.0-x86_64-unknown-linux-musl.tar.gz | tar xz
-          install -m 0755 cog /usr/local/bin/cog
+      # mise's cocogitto plugin resolves a broken bin path on linux-x64; the
+      # official action installs the release binary onto PATH
+      - uses: cocogitto/cocogitto-action@v4
+        with:
+          install-only: true
       # PRs squash-merge, so branch commits are work-in-progress: the
       # conventional-commit contract applies to the PR title — the message
       # the squash will actually produce. cog verify needs no checkout.
