@@ -89,9 +89,7 @@
           oninput={markScrolling}
           onscroll={markScrolling}
           autofocus
-          placeholder={hasKeyboard
-            ? m.placeholder.replaceAll("{saveKeys}", keys.save)
-            : m.placeholderPlain}
+          placeholder={m.placeholder}
           class="scroll-autohide block max-h-[min(30lh,70dvh)] min-h-[2lh] w-full resize-none overflow-y-auto bg-transparent px-5 py-4 text-lg leading-relaxed field-sizing-content focus:outline-none"
         ></textarea>
       </div>
@@ -117,8 +115,15 @@
           type="button"
           onclick={() => void submit()}
           disabled={!canSend}
-          class="ml-auto flex h-9 items-center gap-2 rounded-lg bg-orange-600 px-5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-orange-700 active:scale-[.98] disabled:pointer-events-none disabled:opacity-40"
+          class="group ml-auto flex h-9 items-center rounded-lg bg-orange-600 px-5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-orange-700 active:scale-[.98] disabled:pointer-events-none disabled:opacity-40"
         >
+          <!-- hover reveals the send shortcut; the flexible filename input
+               yields the width so nothing else in the row moves -->
+          <span
+            class="max-w-0 overflow-hidden pr-0 text-[11px] font-semibold tracking-wide whitespace-nowrap text-orange-100 opacity-0 transition-all duration-200 group-hover:max-w-8 group-hover:pr-1.5 group-hover:opacity-100"
+          >
+            {keys.save}
+          </span>
           {m.send}
         </button>
       </div>
