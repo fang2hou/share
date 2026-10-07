@@ -221,6 +221,15 @@ pre.shiki code {
   font-family: inherit;
 }
 
+/* an open popover must escape the card's own paint order: view-transition
+   names give every card a stacking context, so later siblings would otherwise
+   paint over the menu; lift the host card while hovered or while it hosts a
+   floating panel (touch: no hover, the :has() arm covers it) */
+article[data-card-id]:hover,
+article[data-card-id]:has([data-floating]) {
+  z-index: 1;
+}
+
 /* desktop hover affordance for history cards: a whisper of warmth and a
    slightly firmer edge; touch devices never trigger hover states */
 @media (hover: hover) {
