@@ -16,6 +16,7 @@
   import LangPicker from "#lib/molecules/LangPicker.svelte";
   import SharePanel from "#lib/molecules/SharePanel.svelte";
   import { formatFileSize } from "#lib/format.js";
+  import { spaceCjk } from "#lib/cjk.js";
   import { copyText } from "#lib/clipboard.js";
   import { keys } from "#lib/kbd.js";
   import { findLanguage } from "#lib/languages.js";
@@ -274,10 +275,8 @@
         {/if}
       </div>
     {:else}
-      <p
-        class="cjk-autospace mt-2 text-base leading-relaxed break-words whitespace-pre-wrap text-stone-800"
-      >
-        {item.text}
+      <p class="mt-2 text-base leading-relaxed break-words whitespace-pre-wrap text-stone-800">
+        {spaceCjk(item.text)}
       </p>
     {/if}
   {/if}

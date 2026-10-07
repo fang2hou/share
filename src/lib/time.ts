@@ -1,4 +1,5 @@
 import { messages, type Lang } from "#shared/i18n.js";
+import { spaceCjk } from "./cjk.js";
 
 const rtfCache = new Map<Lang, Intl.RelativeTimeFormat>();
 const dtfCache = new Map<Lang, Intl.DateTimeFormat>();
@@ -11,9 +12,11 @@ export function relativeTime(ts: number, now: number, lang: Lang): string {
     rtf = new Intl.RelativeTimeFormat(lang, { numeric: "auto" });
     rtfCache.set(lang, rtf);
   }
-  if (diff < 3_600_000) return rtf.format(-Math.max(1, Math.floor(diff / 60_000)), "minute");
-  if (diff < 86_400_000) return rtf.format(-Math.floor(diff / 3_600_000), "hour");
-  return rtf.format(-Math.floor(diff / 86_400_000), "day");
+  // zh rtf yields "3分钟前"-style tight runs; display them pangu-spaced
+  const label = (s: string): string => (lang.startsWith("zh") ? spaceCjk(s) : s);
+  if (diff < 3_600_000) return label(rtf.format(-Math.max(1, Math.floor(diff / 60_000)), "minute"));
+  if (diff < 86_400_000) return label(rtf.format(-Math.floor(diff / 3_600_000), "hour"));
+  return label(rtf.format(-Math.floor(diff / 86_400_000), "day"));
 }
 
 export function absoluteTime(ts: number, lang: Lang): string {
