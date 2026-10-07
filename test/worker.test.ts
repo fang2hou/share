@@ -3,7 +3,19 @@ import { describe, expect, it } from "vitest";
 import { unzipSync } from "fflate";
 import { signSession } from "../worker/auth.ts";
 import { Space } from "../worker/space.ts";
-import type { Item, ServerMessage } from "../shared/protocol.ts";
+import {
+  MAX_FILE_BYTES,
+  UPLOAD_PART_BYTES,
+  type Item,
+  type ServerMessage,
+} from "../shared/protocol.ts";
+import {
+  MAX_TEXT_PREVIEW_BYTES,
+  previewKind,
+  TEXT_PREVIEW_CHUNK_BYTES,
+  textPreviewRange,
+  decodeTextPreview,
+} from "../shared/file-preview.ts";
 
 const BASE = "http://example.com";
 const ORIGIN = BASE;
@@ -338,11 +350,11 @@ describe("share links", () => {
       expect(view.status).toBe(200);
       expect(view.headers.get("cache-control")).toBe("no-store");
       const html = await view.text();
-      expect(html).toContain("public payload &lt;b&gt;测试&lt;/b&gt;");
+      expect(html).toContain("public payload &lt;b>测试&lt;/b>");
       expect(html).not.toContain("<b>测试</b>");
       // preview card: dynamic title/description, attribute-escaped, never indexed
       expect(html).toContain(
-        '<meta property="og:title" content="public payload &lt;b&gt;测试&lt;/b&gt;">',
+        '<meta property="og:title" content="public payload &lt;b>测试&lt;/b>"',
       );
       expect(html).toContain('content="noindex"');
       expect(html).toContain('property="og:image"');
@@ -350,6 +362,38 @@ describe("share links", () => {
       expect(after.share?.downloads).toBe(1);
     },
   );
+
+  it("renders isolated public Svelte props and safely hydrates untrusted text", async () => {
+    const cookie = await sessionCookie("998");
+    const id = crypto.randomUUID();
+    const text = '</script><script>alert("fixture")</script>&';
+    await postItem(cookie, id, text);
+    const item = await enableShare(cookie, id, true, null);
+    const pages = await Promise.all(
+      ["ja", "ko"].map(async (lang) => {
+        const response = await SELF.fetch(BASE + item.share!.url, {
+          headers: { "Accept-Language": lang },
+        });
+        return { lang, html: await response.text() };
+      }),
+    );
+    for (const { lang, html } of pages) {
+      expect(html).toContain(`lang="${lang}"`);
+      expect(html).not.toContain('<script>alert("fixture")</script>');
+      const data = /<script id="public-view-data" type="application\/json">(.*?)<\/script>/s.exec(
+        html,
+      )?.[1];
+      expect(data).toBeDefined();
+      expect(JSON.parse(data!)).toMatchObject({ kind: "text", lang, text });
+      expect(data).toContain("\\u003c/script>");
+      expect(html).toMatch(/class="[^"]*\bsite-logo\b[^"]*"/);
+      const assetPath = /<script type="module" src="([^"]+)"/.exec(html)?.[1];
+      expect(assetPath).toBeDefined();
+      const asset = await SELF.fetch(BASE + assetPath);
+      expect(asset.status).toBe(200);
+      expect(asset.headers.get("Content-Type")).toContain("javascript");
+    }
+  });
 
   it("enforces the download budget and resets on re-enable", async () => {
     const cookie = await sessionCookie("92");
@@ -652,6 +696,37 @@ describe("password sharing and file collections", () => {
     expect(res.status).toBe(201);
     return ((await res.json()) as CreatedItem).item;
   }
+
+  it("shares language preferences across public views without unlocking protected content", async () => {
+    const cookie = await sessionCookie("990");
+    const id = crypto.randomUUID();
+    await postItem(cookie, id, "private language fixture");
+    const item = await share(cookie, id, "Private-secret-990");
+    const url = BASE + item.share!.url;
+    const response = await SELF.fetch(url, {
+      headers: { Cookie: "ts_lang=ko", "Accept-Language": "en" },
+    });
+    const html = await response.text();
+    expect(html).toContain('lang="ko"');
+    expect(html).toContain("<title>Share · ");
+    expect(html).toContain('rel="icon" href="/favicon.svg"');
+    expect(html).toContain('aria-haspopup="menu"');
+    expect(html).toContain('id="public-view-data" type="application/json"');
+    expect(html).toContain('<script type="module" src="/_public/');
+    expect(response.headers.get("Content-Security-Policy")).toContain("script-src 'self'");
+    expect(html).not.toContain("private language fixture");
+    expect(html).not.toContain("Private-secret-990");
+    expect(response.headers.get("Content-Security-Policy")).toContain("font-src 'self'");
+    const invalid = await SELF.fetch(url, {
+      headers: { Cookie: "ts_lang=__proto__", "Accept-Language": "ja" },
+    });
+    expect(await invalid.text()).toContain('lang="ja"');
+    expect((await SELF.fetch(url + "/zip", { headers: { Cookie: "ts_lang=ko" } })).status).toBe(
+      404,
+    );
+    const state = await SELF.fetch(BASE + "/api/items", { headers: { Cookie: cookie } });
+    expect(((await state.json()) as ItemList).items[0]?.share?.downloads).toBe(0);
+  });
 
   it("keeps protected content private and invalidates grants when the password changes", async () => {
     const cookie = await sessionCookie("991");
@@ -980,5 +1055,211 @@ it("applies additive schema migrations repeatedly without losing existing record
       }>("SELECT files_json, share_password_hash, share_attempts FROM items WHERE id = ?", id)
       .one();
     expect(row).toEqual({ files_json: null, share_password_hash: null, share_attempts: 0 });
+  });
+});
+
+describe("large files", () => {
+  async function start(
+    cookie: string,
+    size: number,
+    id = crypto.randomUUID(),
+    collectionId?: string,
+  ) {
+    return SELF.fetch(BASE + "/api/uploads", {
+      method: "POST",
+      headers: { Cookie: cookie, Origin: ORIGIN, "content-type": "application/json" },
+      body: JSON.stringify({ id, size, name: "large.txt", type: "text/plain", collectionId }),
+    });
+  }
+
+  it("accepts the 256 MiB boundary and rejects larger or invalid upload declarations", async () => {
+    const cookie = await sessionCookie("multipart-boundary");
+    const accepted = await start(cookie, 256 * 1024 * 1024);
+    expect(accepted.status).toBe(201);
+    const { reference } = await accepted.json<{ reference: string }>();
+    const base = BASE + "/api/uploads/" + reference;
+    expect((await start(cookie, MAX_FILE_BYTES + 1)).status).toBe(413);
+    expect((await start(cookie, -1)).status).toBe(400);
+    expect((await start(cookie, 1.5)).status).toBe(400);
+    expect(
+      (
+        await SELF.fetch(base, {
+          method: "DELETE",
+          headers: { Cookie: cookie, Origin: "https://evil.example" },
+        })
+      ).status,
+    ).toBe(403);
+    expect(
+      (
+        await SELF.fetch(base, {
+          method: "DELETE",
+          headers: { Cookie: await sessionCookie("multipart-other"), Origin: ORIGIN },
+        })
+      ).status,
+    ).toBe(404);
+    expect(
+      (
+        await SELF.fetch(base, {
+          method: "DELETE",
+          headers: { Cookie: cookie, Origin: ORIGIN },
+        })
+      ).status,
+    ).toBe(204);
+    expect(
+      (await env.FILES.list({ prefix: "uploads/gh:multipart-boundary/" })).objects,
+    ).toHaveLength(0);
+  });
+
+  it("assembles streamed parts, preserves accepted bytes on retry, and supports ranged downloads", async () => {
+    const cookie = await sessionCookie("multipart-transfer");
+    const id = crypto.randomUUID();
+    const collectionId = crypto.randomUUID();
+    const first = new Uint8Array(UPLOAD_PART_BYTES).fill(65);
+    const tail = new TextEncoder().encode("last-preview-section");
+    async function transfer(fill: Uint8Array) {
+      const init = await start(cookie, first.length + tail.length, id, collectionId);
+      expect(init.status).toBe(201);
+      const { reference } = await init.json<{ reference: string }>();
+      const base = BASE + "/api/uploads/" + reference;
+      const headers = { Cookie: cookie, Origin: ORIGIN };
+      const malformed = await SELF.fetch(base + "/1", { method: "PUT", headers, body: "short" });
+      expect(malformed.status).toBe(400);
+      const parts: R2UploadedPart[] = [];
+      for (const [index, bytes] of [fill, tail].entries()) {
+        const response = await SELF.fetch(base + "/" + (index + 1), {
+          method: "PUT",
+          headers,
+          body: bytes,
+        });
+        expect(response.status).toBe(200);
+        parts.push(await response.json<R2UploadedPart>());
+      }
+      const invalid = await SELF.fetch(base + "/complete", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ parts: [...parts].reverse() }),
+      });
+      expect(invalid.status).toBe(400);
+      const complete = await SELF.fetch(base + "/complete", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ parts }),
+      });
+      expect(complete.status).toBe(201);
+      const result = await complete.json<CreatedItem>();
+      expect(result.item.files?.[0]?.size).toBe(first.length + tail.length);
+      expect(
+        (await env.FILES.list({ prefix: "uploads/gh:multipart-transfer/" })).objects,
+      ).toHaveLength(0);
+    }
+    await transfer(first);
+    first.fill(66);
+    await transfer(first);
+    const begin = await SELF.fetch(BASE + `/api/files/${collectionId}/${id}`, {
+      headers: { Cookie: cookie, Range: "bytes=0-3" },
+    });
+    expect(begin.status).toBe(206);
+    expect(await begin.text()).toBe("AAAA");
+    const end = await SELF.fetch(BASE + `/api/files/${collectionId}/${id}`, {
+      headers: { Cookie: cookie, Range: `bytes=${UPLOAD_PART_BYTES}-` },
+    });
+    expect(end.status).toBe(206);
+    expect(await end.text()).toBe("last-preview-section");
+  }, 30000);
+
+  it("uploads and downloads a complete 256 MiB file in bounded requests", async () => {
+    const cookie = await sessionCookie("multipart-full-size");
+    const id = crypto.randomUUID();
+    const init = await start(cookie, MAX_FILE_BYTES, id);
+    expect(init.status).toBe(201);
+    const { reference } = await init.json<{ reference: string }>();
+    const base = BASE + "/api/uploads/" + reference;
+    const headers = { Cookie: cookie, Origin: ORIGIN };
+    const bytes = new Uint8Array(UPLOAD_PART_BYTES).fill(65);
+    const parts: R2UploadedPart[] = [];
+    for (let part = 1; part <= MAX_FILE_BYTES / UPLOAD_PART_BYTES; part++) {
+      const response = await SELF.fetch(base + "/" + part, { method: "PUT", headers, body: bytes });
+      expect(response.status).toBe(200);
+      parts.push(await response.json<R2UploadedPart>());
+    }
+    const complete = await SELF.fetch(base + "/complete", {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ parts }),
+    });
+    expect(complete.status).toBe(201);
+    expect((await complete.json<CreatedItem>()).item.fileSize).toBe(MAX_FILE_BYTES);
+    const blocked = await SELF.fetch(BASE + `/api/files/${id}?preview=1`, {
+      headers: { Cookie: cookie, Range: `bytes=${MAX_FILE_BYTES - 4}-` },
+    });
+    expect(blocked.status).toBe(404);
+    const preview = await SELF.fetch(BASE + `/api/files/${id}`, {
+      headers: { Cookie: cookie, Range: `bytes=${MAX_FILE_BYTES - 4}-` },
+    });
+    expect(preview.status).toBe(206);
+    expect(preview.headers.get("content-range")).toBe(
+      `bytes ${MAX_FILE_BYTES - 4}-${MAX_FILE_BYTES - 1}/${MAX_FILE_BYTES}`,
+    );
+    expect(await preview.text()).toBe("AAAA");
+  }, 30000);
+
+  it("enforces the 10 MiB text preview boundary on owner and public requests", async () => {
+    const cookie = await sessionCookie("99110");
+    for (const size of [MAX_TEXT_PREVIEW_BYTES, MAX_TEXT_PREVIEW_BYTES + 1]) {
+      const id = crypto.randomUUID();
+      const upload = await SELF.fetch(BASE + "/api/files", {
+        method: "POST",
+        headers: {
+          Cookie: cookie,
+          Origin: ORIGIN,
+          "content-type": size > MAX_TEXT_PREVIEW_BYTES ? "application/octet-stream" : "text/plain",
+          "x-id": id,
+          "x-file-name": "text-limit.txt",
+        },
+        body: new Uint8Array(size).fill(65),
+      });
+      expect(upload.status).toBe(201);
+      const ownerPreview = await SELF.fetch(BASE + `/api/files/${id}?preview=1`, {
+        headers: { Cookie: cookie, Range: "bytes=0-3" },
+      });
+      expect(ownerPreview.status).toBe(size === MAX_TEXT_PREVIEW_BYTES ? 206 : 404);
+      await ownerPreview.arrayBuffer();
+      const shared = await SELF.fetch(BASE + `/api/items/${id}/share`, {
+        method: "POST",
+        headers: { Cookie: cookie, Origin: ORIGIN },
+        body: JSON.stringify({ active: true, maxDownloads: 1 }),
+      });
+      const item = (await shared.json<CreatedItem>()).item;
+      const url = BASE + item.share?.url;
+      const publicPreview = await SELF.fetch(url + "?preview=1", {
+        headers: { Range: "bytes=0-3" },
+      });
+      expect(publicPreview.status).toBe(size === MAX_TEXT_PREVIEW_BYTES ? 206 : 404);
+      await publicPreview.arrayBuffer();
+      if (size > MAX_TEXT_PREVIEW_BYTES) {
+        const download = await SELF.fetch(url, { headers: { Range: "bytes=0-3" } });
+        expect(download.status).toBe(206);
+        expect(await download.text()).toBe("AAAA");
+      }
+    }
+    expect(previewKind("application/json", MAX_TEXT_PREVIEW_BYTES + 1)).toBeNull();
+    expect(previewKind("text/plain; charset=utf-8", MAX_TEXT_PREVIEW_BYTES)).toBe("text");
+    expect(previewKind("application/pdf", MAX_FILE_BYTES)).toBe("pdf");
+    expect(previewKind("image/png", MAX_FILE_BYTES)).toBe("image");
+  });
+
+  it("reads all text preview sections without splitting UTF-8 characters", () => {
+    for (const character of ["é", "界", "😀"]) {
+      for (let overlap = 1; overlap < new TextEncoder().encode(character).length; overlap++) {
+        const text = "a".repeat(TEXT_PREVIEW_CHUNK_BYTES - overlap) + character + "tail";
+        const bytes = new TextEncoder().encode(text);
+        const sections = [0, 1].map((page) => {
+          const range = textPreviewRange(page, bytes.length);
+          return decodeTextPreview(bytes.slice(range.start, range.end + 1).buffer, page);
+        });
+        expect(sections.join("")).toBe(text);
+      }
+    }
+    expect(textPreviewRange(1023, MAX_FILE_BYTES).end).toBe(MAX_FILE_BYTES - 1);
   });
 });

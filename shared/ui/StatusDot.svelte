@@ -14,11 +14,8 @@
 </script>
 
 {#if variant === "logo"}
-  <!-- the wordmark period: OG-image style, colored by connection state -->
-  <span
-    class="ml-[0.18em] inline-block size-[0.24em] translate-y-[0.02em] rounded-full {color}"
-    title={status}
-  ></span>
+  <!-- The wordmark period scales with the lettering and follows connection state. -->
+  <span class="site-logo-dot {color}" title={status}></span>
 {:else}
   <span class="size-2 rounded-full {color}" title={status}></span>
 {/if}

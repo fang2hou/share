@@ -1,16 +1,24 @@
 import { Zip, ZipPassThrough } from "fflate";
 import type { Item, StoredFile } from "../shared/protocol.ts";
-import { previewKind } from "../shared/file-preview.ts";
+import { previewKind, fileTypeFromName, MAX_TEXT_PREVIEW_BYTES } from "../shared/file-preview.ts";
 
 export async function readFile(
   bucket: R2Bucket,
   key: string,
   range: string | null,
+  preview = false,
 ): Promise<R2ObjectBody | null> {
+  const metadata = range || preview ? await bucket.head(key) : null;
+  if (range || preview) {
+    if (!metadata) return null;
+    const type = metadata.httpMetadata?.contentType ?? "application/octet-stream";
+    const name = decodeURIComponent(metadata.customMetadata?.name ?? "");
+    const kind = previewKind(type) ?? previewKind(fileTypeFromName(name));
+    if (preview && kind === "text" && metadata.size > MAX_TEXT_PREVIEW_BYTES) return null;
+  }
   if (!range) return bucket.get(key);
   const match = /^bytes=(\d*)-(\d*)$/.exec(range);
   if (!match || (!match[1] && !match[2])) return null;
-  const metadata = await bucket.head(key);
   if (!metadata) return null;
   const offset = match[1] ? Number(match[1]) : Math.max(0, metadata.size - Number(match[2]));
   const end =
@@ -35,7 +43,7 @@ export function fileResponse(
 ): Response {
   const name = item.fileName ?? "download";
   const mime = obj.httpMetadata?.contentType ?? "application/octet-stream";
-  const kind = previewKind(mime);
+  const kind = previewKind(mime, obj.size);
   const inline = preview && kind !== null;
   const ascii = name
     .replace(/[^\x20-\x7e]/g, "_")

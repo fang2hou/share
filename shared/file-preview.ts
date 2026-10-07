@@ -1,6 +1,27 @@
+export const MAX_TEXT_PREVIEW_BYTES = 10 * 1024 * 1024;
+export const TEXT_PREVIEW_CHUNK_BYTES = 256 * 1024;
+
+// Read a small overlap so UTF-8 characters crossing page boundaries stay intact.
+export function textPreviewRange(page: number, size: number): { start: number; end: number } {
+  const offset = page * TEXT_PREVIEW_CHUNK_BYTES;
+  return {
+    start: Math.max(0, offset - 3),
+    end: Math.min(size - 1, offset + TEXT_PREVIEW_CHUNK_BYTES + 2),
+  };
+}
+
+export function decodeTextPreview(buffer: ArrayBuffer, page: number): string {
+  const bytes = new Uint8Array(buffer);
+  let start = page === 0 ? 0 : 3;
+  let end = Math.min(bytes.length, start + TEXT_PREVIEW_CHUNK_BYTES);
+  while (start < bytes.length && (bytes[start]! & 0xc0) === 0x80) start++;
+  while (end < bytes.length && (bytes[end]! & 0xc0) === 0x80) end++;
+  return new TextDecoder().decode(bytes.subarray(start, end));
+}
+
 export type PreviewKind = "image" | "audio" | "video" | "pdf" | "text";
 
-export function previewKind(type: string): PreviewKind | null {
+export function previewKind(type: string, size = 0): PreviewKind | null {
   const mime = type.split(";")[0]?.trim().toLowerCase() ?? "";
   if (/^image\/(png|jpeg|gif|webp|avif|bmp)$/.test(mime)) return "image";
   if (/^audio\/(mpeg|mp4|ogg|wav|webm|flac|x-wav)$/.test(mime)) return "audio";
@@ -10,7 +31,7 @@ export function previewKind(type: string): PreviewKind | null {
     mime.startsWith("text/") ||
     ["application/json", "application/xml", "application/javascript"].includes(mime)
   )
-    return "text";
+    return size > MAX_TEXT_PREVIEW_BYTES ? null : "text";
   return null;
 }
 

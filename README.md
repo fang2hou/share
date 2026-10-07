@@ -43,7 +43,7 @@ Open http://localhost:5173 and sign in with GitHub. `mise run` lists every other
 - **Text blocks** — Shift+Enter to send (IME-safe), editable, one-click copy
 - **Code snippets** — optional filename and language suffix per text block; recognized languages get syntax highlighting (lazy highlight.js, one small chunk per language) and a language tag; a filename adds a download action
   to the item menu
-- **Files** — drag, paste, or pick; multiple files auto-package into one zip; 75 MB cap with live progress
+- **Files** — drag, paste, or pick; individual or batch uploads; optional ZIP downloads; 256 MB per file with live progress
 - **Realtime** — WebSocket push with automatic reconnect and polling fallback
 - **Share links** — per-item public URLs (`/f/<sub>.<token>`) that work without login; optional download budget; revoke anytime; rich social-preview cards, excluded from search indexes
 - **Day grouping** — today and yesterday expanded, older days collapsed, history loads on demand

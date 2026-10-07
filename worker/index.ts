@@ -11,8 +11,10 @@ import {
 import { messages, pickLang, type Lang } from "../shared/i18n.ts";
 
 import { fileResponse, zipResponse, selectedFiles, readFile } from "./file-transfer.ts";
-import { fileView, passwordView, publicFiles } from "./share-view.ts";
+import { fileView, passwordView, publicFiles, textView } from "./share-view.ts";
 import { grantCookie, hasGrant } from "./share-password.ts";
+
+import { multipartUpload, registerFile } from "./file-upload.ts";
 
 export { Space } from "./space.ts";
 
@@ -109,6 +111,15 @@ async function api(request: Request, env: Env, url: URL): Promise<Response> {
   const stub = env.SPACE.getByName("gh:" + session.sub);
   const path = url.pathname;
 
+  if (path === "/api/uploads" || path.startsWith("/api/uploads/")) {
+    if (!originAllowed(request, env)) return jsonError("forbidden", 403);
+    try {
+      return await multipartUpload(request, env, session.sub, stub, url);
+    } catch {
+      return jsonError("upload_failed", 500);
+    }
+  }
+
   if (path === "/api/items") {
     if (request.method === "GET") {
       let before: number | undefined;
@@ -189,27 +200,7 @@ async function api(request: Request, env: Env, url: URL): Promise<Response> {
       return jsonError("upload_failed", 500);
     }
     if (!stored) return jsonError("upload_failed", 500);
-    if (
-      stored.customMetadata?.itemId !== (collectionId ?? id) &&
-      (collectionId || stored.customMetadata?.itemId)
-    )
-      return jsonError("bad_request", 400);
-    const name = stored.customMetadata?.name
-      ? decodeURIComponent(stored.customMetadata.name)
-      : fileName;
-    const item = collectionId
-      ? await stub.addCollectionFile(collectionId, {
-          id,
-          name,
-          size: stored.size,
-          type: stored.httpMetadata?.contentType ?? "application/octet-stream",
-        })
-      : await stub.createFile(id, { fileName: name, fileSize: stored.size, fileKey: key });
-    if (!item) {
-      if (await stub.fileCanUpload(id)) await env.FILES.delete(key);
-      return jsonError("bad_request", 400);
-    }
-    return Response.json({ item }, { status: 201 });
+    return registerFile(env, stub, stored, id, fileName, collectionId ?? undefined);
   }
 
   const fileMatch = path.match(/^\/api\/files\/([^/]+)(?:\/([^/]+))?$/);
@@ -229,7 +220,12 @@ async function api(request: Request, env: Env, url: URL): Promise<Response> {
     if (memberId && !ID_PATTERN.test(memberId)) return jsonError("bad_request", 400);
     const file = await stub.getFile(fileId, memberId);
     if (!file) return jsonError("not_found", 404);
-    const obj = await readFile(env.FILES, file.fileKey, request.headers.get("Range"));
+    const obj = await readFile(
+      env.FILES,
+      file.fileKey,
+      request.headers.get("Range"),
+      url.searchParams.get("preview") === "1",
+    );
     if (!obj) return jsonError("not_found", 404);
     return fileResponse(
       obj,
@@ -322,15 +318,14 @@ async function api(request: Request, env: Env, url: URL): Promise<Response> {
   return jsonError("not_found", 404);
 }
 
-function escapeHtml(s: string): string {
-  return s
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;");
-}
-
 function requestLang(request: Request): Lang {
+  const saved = request.headers
+    .get("Cookie")
+    ?.split(";")
+    .map((part) => part.trim())
+    .find((part) => part.startsWith("ts_lang="))
+    ?.slice(8);
+  if (saved && Object.hasOwn(messages, saved)) return saved as Lang;
   const tags = (request.headers.get("Accept-Language") ?? "")
     .split(",")
     .map((t) => (t.split(";")[0] ?? "").trim())
@@ -353,7 +348,6 @@ async function publicShare(
   const path = `/f/${sub}.${token}`;
   const url = new URL(request.url);
   const lang = requestLang(request);
-  const m = messages[lang];
   const notFound = (): Response =>
     new Response("Not Found", {
       status: 404,
@@ -399,14 +393,14 @@ async function publicShare(
     info.passwordHash &&
     !(await hasGrant(request, env.SESSION_SECRET, path, info.passwordHash))
   ) {
-    return action === "" ? passwordView(lang, m, path) : notFound();
+    return action === "" ? passwordView(lang, path) : notFound();
   }
   if (info.item.kind === "file") {
     if (
       action === "" &&
       (info.item.files || info.passwordHash || url.searchParams.get("view") === "1")
     )
-      return fileView(lang, m, publicFiles(info.item), path);
+      return fileView(lang, publicFiles(info.item), path);
     if (action === "/zip") {
       const files = selectedFiles(publicFiles(info.item), url.searchParams.get("ids"));
       if (!files) return notFound();
@@ -418,7 +412,12 @@ async function publicShare(
     if (action && (!member || !ID_PATTERN.test(member))) return notFound();
     const file = await stub.getFile(info.item.id, member);
     if (!file) return notFound();
-    const obj = await readFile(env.FILES, file.fileKey, request.headers.get("Range"));
+    const obj = await readFile(
+      env.FILES,
+      file.fileKey,
+      request.headers.get("Range"),
+      url.searchParams.get("preview") === "1",
+    );
     if (!obj) return notFound();
     const access = await stub.accessShared(token, info.passwordHash);
     if (!access || access.exhausted) return notFound();
@@ -439,57 +438,7 @@ async function publicShare(
       headers: { "cache-control": "no-store", "x-robots-tag": "noindex" },
     });
   }
-  const { item } = result;
-  // preview card: first line as the title, a longer slice as the description
-  const firstLine = item.text.split("\n").find((l) => l.trim().length > 0) ?? "";
-  const title =
-    firstLine.length > 60 ? firstLine.slice(0, 57) + "…" : firstLine || m.shareViewTitle;
-  const summary = item.text.replaceAll(/\s+/g, " ").trim();
-  const description =
-    (summary.length > 200 ? summary.slice(0, 197) + "…" : summary) || m.shareViewTitle;
-  const origin = new URL(request.url).origin;
-  const html =
-    '<!doctype html><html lang="' +
-    lang +
-    '"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">' +
-    '<meta name="robots" content="noindex"><title>' +
-    escapeHtml(title) +
-    " — share</title>" +
-    '<meta name="description" content="' +
-    escapeHtml(description) +
-    '">' +
-    '<meta property="og:title" content="' +
-    escapeHtml(title) +
-    '"><meta property="og:description" content="' +
-    escapeHtml(description) +
-    '"><meta property="og:type" content="website"><meta property="og:site_name" content="share">' +
-    '<meta property="og:url" content="' +
-    escapeHtml(request.url) +
-    '"><meta property="og:image" content="' +
-    origin +
-    '/og.png"><meta name="twitter:card" content="summary_large_image">' +
-    "<style>body{font-family:system-ui,sans-serif;background:#faf7f2;color:#292524;margin:0;padding:2rem}" +
-    "main{max-width:48rem;margin:0 auto;background:#fff;border-radius:1rem;padding:1.5rem;box-shadow:0 1px 2px rgb(0 0 0/.06)}" +
-    "pre{white-space:pre-wrap;word-break:break-word;font:inherit;line-height:1.6;margin:0 0 1rem}" +
-    "button{border:0;border-radius:.75rem;background:#1c1917;color:#fff;font-size:1rem;font-weight:600;padding:.75rem 2rem;cursor:pointer}" +
-    "button.ok{background:#059669}</style>" +
-    "<main><pre>" +
-    escapeHtml(item.text) +
-    '</pre><button onclick="n=1">' +
-    escapeHtml(m.copy) +
-    "</button></main>" +
-    '<script>document.querySelector("button").onclick=async function(){try{await navigator.clipboard.writeText(document.querySelector("pre").textContent);' +
-    "this.textContent='" +
-    m.copied +
-    "';this.className='ok'}catch(e){}}<" +
-    "/script>";
-  return new Response(html, {
-    headers: {
-      "content-type": "text/html; charset=utf-8",
-      "cache-control": "no-store",
-      "x-robots-tag": "noindex",
-    },
-  });
+  return textView(lang, result.item, request.url);
 }
 
 export default {

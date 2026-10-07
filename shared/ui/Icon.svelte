@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { ACTION_ICONS } from "#shared/action-icons.js";
   export type IconName =
     | "copy"
     | "check"
@@ -12,9 +13,18 @@
     | "type"
     | "send"
     | "x"
+    | "eye"
+    | "eyeOff"
+    | "key"
+    | "archive"
+    | "downloadEach"
+    | "userArrow"
     | "chevronDown";
 
   let { name, size = 20 }: { name: IconName; size?: number } = $props();
+  const action = $derived(
+    Object.hasOwn(ACTION_ICONS, name) ? ACTION_ICONS[name as keyof typeof ACTION_ICONS] : null,
+  );
 </script>
 
 <!-- paths from lucide v1.52.0 (ISC) -->
@@ -29,7 +39,11 @@
   stroke-linejoin="round"
   aria-hidden="true"
 >
-  {#if name === "copy"}
+  {#if action}
+    {#each action.paths as d (d)}<path {d} />{/each}
+    {#each action.circles ?? [] as circle (circle)}<circle {...circle} />{/each}
+    {#each action.rects ?? [] as rect (rect)}<rect {...rect} />{/each}
+  {:else if name === "copy"}
     <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
     <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
   {:else if name === "check"}
@@ -47,10 +61,6 @@
     <path d="M10 9H8" />
     <path d="M16 13H8" />
     <path d="M16 17H8" />
-  {:else if name === "download"}
-    <path d="M12 15V3" />
-    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-    <path d="m7 10 5 5 5-5" />
   {:else if name === "paperclip"}
     <path
       d="m16 6-8.414 8.586a2 2 0 0 0 2.829 2.829l8.414-8.586a4 4 0 1 0-5.657-5.657l-8.379 8.551a6 6 0 1 0 8.485 8.485l8.379-8.551"
@@ -76,6 +86,12 @@
   {:else if name === "x"}
     <path d="M18 6 6 18" />
     <path d="m6 6 12 12" />
+  {:else if name === "key"}
+    <circle cx="8" cy="8" r="5" />
+    <path d="m11.5 11.5 9 9H23v-4h-4v-4h-4M6.5 6.5h.01" />
+  {:else if name === "userArrow"}
+    <circle cx="8" cy="7" r="4" />
+    <path d="M2 21v-2a6 6 0 0 1 10-4.5M14 12h8m-3-3 3 3-3 3" />
   {:else if name === "chevronDown"}
     <path d="m6 9 6 6 6-6" />
   {:else if name === "type"}

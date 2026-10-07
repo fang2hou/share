@@ -46,3 +46,7 @@ After changing any binding in `wrangler.jsonc`, run `pnpm cf-typegen` and commit
 ## Verification
 
 Local and CI run the exact same commands: `mise run check` and `mise run test` (CI additionally runs `cog check`). A command that passes locally but fails in CI means the environments diverged — realign them instead of adding CI-only fixes.
+
+## Shared public UI
+
+`shared/ui/` owns components used by both the SPA and the public share views. Edit these components once; do not add Worker HTML templates or separate public versions of the header, language menu, or file browser. `pnpm build` produces both the SvelteKit shell and the public Svelte SSR/client artifacts. `mise run dev:worker` prepares the public artifacts, and Vite rebuilds them when shared UI or CSS changes. Generated renderers and hashed assets are not committed.

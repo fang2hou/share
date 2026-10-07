@@ -1,13 +1,13 @@
 <script lang="ts">
-  import favicon from "#lib/assets/favicon.svg";
   import type { LayoutProps } from "./$types";
   import "../app.css";
+  import ReadyFrame from "#shared/ui/ReadyFrame.svelte";
 
   let { children }: LayoutProps = $props();
 </script>
 
 <svelte:head>
-  <link rel="icon" href={favicon} />
+  <link rel="icon" href="/favicon.svg" />
 </svelte:head>
 
-{@render children()}
+<ReadyFrame>{@render children()}</ReadyFrame>

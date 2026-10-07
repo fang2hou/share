@@ -4,33 +4,25 @@
   import ItemCard from "#lib/organisms/ItemCard.svelte";
   import type { CardApi } from "#lib/organisms/ItemCard.svelte";
   import UploadCard from "#lib/organisms/UploadCard.svelte";
-  import StatusDot from "#lib/atoms/StatusDot.svelte";
-  import ModeSwitcher from "#lib/molecules/ModeSwitcher.svelte";
-  import LangNav from "#lib/molecules/LangNav.svelte";
+  import { suppressContextMenu } from "#shared/ui/chrome.js";
+  import AppHeader from "#shared/ui/AppHeader.svelte";
   import { FileStage } from "#lib/stage.svelte.js";
-  import { messages, pickLang, type Lang } from "#shared/i18n.js";
+  import { formatCount, messages, pickLang, type Lang } from "#shared/i18n.js";
   import { MAX_FILE_BYTES, MAX_COLLECTION_FILES, type Item } from "#shared/protocol.js";
   import { SpaceStore } from "#lib/space.svelte.js";
   import { mountFavicon, setFaviconBadge } from "#lib/favicon.js";
   import { dayKey, dayKeyOffset, dayLabel } from "#lib/time.js";
-  import { loadLangFonts } from "#lib/fonts.js";
 
   function initialLang(): Lang {
     const saved = localStorage.getItem("ts_lang");
-    if (saved !== null && saved in messages) return saved as Lang;
+    if (saved !== null && Object.hasOwn(messages, saved)) return saved as Lang;
     return pickLang(navigator.languages);
   }
 
   let lang = $state(initialLang());
   const m = $derived(messages[lang]);
-  $effect(() => {
-    document.documentElement.lang = lang;
-    void loadLangFonts(lang);
-  });
-
   function setLang(next: Lang): void {
     lang = next;
-    localStorage.setItem("ts_lang", next);
   }
 
   const space = new SpaceStore({ onRemote: () => bumpUnread() });
@@ -38,13 +30,14 @@
   // physical-keyboard proxy: only these devices see Shift+Enter / Esc hints
   const hasKeyboard = matchMedia("(hover: hover) and (pointer: fine)").matches;
 
-  // unread count surfaced in the favicon badge and the tab title
+  // Unread means new remote content received while this page was unattended.
   let unread = 0;
   function applyUnread(): void {
     setFaviconBadge(unread);
     document.title = unread > 0 ? `share. (+${unread})` : "share.";
   }
   function bumpUnread(): void {
+    if (document.visibilityState === "visible" && document.hasFocus()) return;
     unread = Math.min(unread + 1, 99);
     applyUnread();
   }
@@ -177,6 +170,11 @@
   function onVisibilityChange(): void {
     if (document.visibilityState !== "visible") return;
     now = Date.now();
+    acknowledgeUnread();
+  }
+
+  function acknowledgeUnread(): void {
+    if (document.visibilityState !== "visible") return;
     unread = 0;
     applyUnread();
   }
@@ -298,6 +296,7 @@
 
   onMount(() => {
     mountFavicon();
+    applyUnread();
     space.connect();
     const tickId = setInterval(() => (now = Date.now()), 15_000);
     return () => {
@@ -310,6 +309,7 @@
 </script>
 
 <svelte:window
+  onfocus={acknowledgeUnread}
   ondragenter={onDragEnter}
   ondragover={onDragOver}
   ondragleave={onDragLeave}
@@ -323,19 +323,16 @@
   onpointerover={onCardPointerOver}
   onpointerout={onCardPointerOut}
   onfocusin={onCardFocusIn}
-  class="mx-auto max-w-3xl space-y-4 py-6 pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] pb-[max(1.5rem,env(safe-area-inset-bottom))]"
+  class="mx-auto max-w-3xl space-y-4 py-10 pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] pb-[max(3rem,env(safe-area-inset-bottom))] sm:py-14 sm:pb-20"
 >
-  <!-- The language menu uses the same compact trigger on all devices. -->
-  <header class="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
-    <div class="flex items-center gap-3">
-      <!-- wordmark in OG-image style; the period doubles as the status dot -->
-      <span class="text-3xl leading-9 font-bold tracking-[-0.04em] text-stone-900">
-        share<StatusDot status={space.status} variant="logo" />
-      </span>
-      <ModeSwitcher {mode} onPick={setMode} labelText={m.modeText} labelFiles={m.modeFiles} />
-    </div>
-    <LangNav {lang} label={m.changeLanguage} onPick={setLang} />
-  </header>
+  <AppHeader
+    {lang}
+    onPickLanguage={setLang}
+    status={space.status}
+    {mode}
+    onPickMode={setMode}
+    {notice}
+  />
   <Composer
     {m}
     {mode}
@@ -346,14 +343,6 @@
     onUpload={uploadStaged}
     onUploadOne={uploadOne}
   />
-  <p aria-live="polite" class="min-h-5 text-sm">
-    {#if notice}
-      <span class="font-medium text-red-600">{notice}</span>
-    {:else if space.status === "reconnecting"}
-      <span class="font-medium text-amber-600">{m.reconnecting}</span>
-    {/if}
-  </p>
-
   {#each space.uploads as u (u.id)}
     <UploadCard name={u.name} size={u.size} progress={u.progress} {m} />
   {/each}
@@ -371,7 +360,9 @@
       <button
         onclick={() => toggleDay(group.key)}
         aria-expanded={group.expanded}
-        class="flex w-full items-center gap-2 rounded-xl px-2 py-1.5 text-left transition-colors hover:bg-stone-100"
+        {@attach suppressContextMenu}
+        style:view-transition-name={`day-${group.key}`}
+        class="ui-chrome flex w-full items-center gap-2 rounded-xl px-2 py-1.5 text-left transition-colors hover:bg-stone-100"
       >
         <svg
           class="size-4 shrink-0 text-stone-400 transition-transform {group.expanded
@@ -388,7 +379,7 @@
           <path d="m9 18 6-6-6-6" />
         </svg>
         <span class="text-sm font-semibold text-stone-600">{group.label}</span>
-        <span class="text-xs text-stone-400">{group.items.length} {m.items}</span>
+        <span class="text-xs text-stone-400">{formatCount(m.itemCount, group.items.length)}</span>
       </button>
       {#if group.expanded}
         {#each group.items as item (item.id)}

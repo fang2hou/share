@@ -1,6 +1,7 @@
 export const MAX_TEXT_LENGTH = 100_000; // by character count
 export const MAX_BODY_BYTES = 524_288;
-export const MAX_FILE_BYTES = 75 * 1024 * 1024;
+export const MAX_FILE_BYTES = 256 * 1024 * 1024;
+export const UPLOAD_PART_BYTES = 32 * 1024 * 1024;
 export const PAGE_SIZE = 50;
 export const ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 export const SHARE_TOKEN_PATTERN = /^[A-Za-z0-9_-]{22,43}$/;

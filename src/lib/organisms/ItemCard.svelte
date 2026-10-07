@@ -8,14 +8,14 @@
 </script>
 
 <script lang="ts">
-  import type { Lang, Messages } from "#shared/i18n.js";
+  import { formatCount, interpolate, type Lang, type Messages } from "#shared/i18n.js";
   import type { Item } from "#shared/protocol.js";
-  import Icon from "#lib/atoms/Icon.svelte";
+  import Icon from "#shared/ui/Icon.svelte";
   import CardMeta from "#lib/molecules/CardMeta.svelte";
   import ActionMenu from "#lib/molecules/ActionMenu.svelte";
   import LangPicker from "#lib/molecules/LangPicker.svelte";
   import { fileTypeFromName } from "#shared/file-preview.js";
-  import FileBrowser from "#lib/molecules/FileBrowser.svelte";
+  import FileBrowser from "#shared/ui/FileBrowser.svelte";
   import SharePanel from "#lib/molecules/SharePanel.svelte";
   import { formatFileSize } from "#shared/format.js";
   import { spaceCjk } from "#lib/cjk.js";
@@ -169,7 +169,7 @@
 
 <article
   data-card-id={item.id}
-  style="--vt-item: item-{item.id}"
+  style="--vt-item: item-{item.id}; --file-list-radius: 7px"
   class="card-hover squircle relative rounded-2xl border border-stone-200/80 bg-white p-4 transition {pending
     ? 'opacity-60'
     : ''}"
@@ -180,14 +180,14 @@
       bind:value={draft}
       onkeydown={onKeydown}
       autofocus
-      class="squircle min-h-20 w-full rounded-xl border border-stone-300/90 bg-white p-3 text-base leading-relaxed field-sizing-content transition placeholder:text-stone-400 focus:border-stone-500 focus:ring-4 focus:ring-orange-500/15 focus:outline-none"
+      class="squircle min-h-20 w-full rounded-xl border border-stone-300/90 bg-white p-3 text-base leading-relaxed field-sizing-content transition placeholder:text-stone-400 hover:border-stone-400 focus:border-stone-500 focus:outline-none"
     ></textarea>
     <div class="mt-2 flex flex-wrap items-center gap-2">
       <input
         bind:value={draftFilename}
         maxlength={64}
         placeholder={m.filenamePlaceholder}
-        class="code-font h-9 min-w-32 flex-1 rounded-lg border border-stone-300/90 bg-white px-2.5 text-sm text-stone-700 placeholder:font-sans placeholder:text-stone-400 focus:border-stone-500 focus:ring-4 focus:ring-orange-500/15 focus:outline-none"
+        class="code-font h-9 min-w-32 flex-1 rounded-lg border border-stone-300/90 bg-white px-2.5 text-sm text-stone-700 placeholder:font-sans placeholder:text-stone-400 hover:border-stone-400 focus:border-stone-500 focus:outline-none"
       />
       <span
         class="relative top-0.5 text-xl leading-none font-bold text-stone-600"
@@ -204,7 +204,7 @@
       </div>
     </div>
     <p class="kbd-hint mt-2 text-xs text-stone-400">
-      {m.editHint.replaceAll("{saveKeys}", keys.save).replaceAll("{escKeys}", keys.esc)}
+      {interpolate(m.editHint, { saveKeys: keys.save, escKeys: keys.esc })}
       {#if saveFailed}<span class="font-medium text-red-600">{m.saveFailed}</span>{/if}
     </p>
     <div class="mt-2 flex gap-2">
@@ -273,7 +273,7 @@
       {#if isCollection}
         <p class="mt-2 flex items-center gap-2 text-base text-stone-800">
           <Icon name="fileText" size={18} /><span class="font-medium"
-            >{cardFiles.length} {m.filesUnit}</span
+            >{formatCount(m.fileCount, cardFiles.length)}</span
           ><span class="text-sm text-stone-400">{formatFileSize(item.fileSize ?? 0)}</span>
         </p>
       {/if}
@@ -307,7 +307,7 @@
   {/if}
 
   {#if !editing && !pending && shareOpen}
-    <SharePanel {item} {m} {onShare} />
+    <SharePanel {item} {m} {onShare} onClose={() => (shareOpen = false)} />
   {/if}
 
   {#if confirmDelete}
@@ -318,7 +318,7 @@
       onkeydown={(e) => e.key === "Escape" && onDismissConfirm()}
     >
       <p class="px-4 text-center text-base font-medium text-red-600">
-        {m.confirmDeleteKeys.replaceAll("{keys}", keys.del)}
+        {interpolate(m.confirmDeleteKeys, { keys: keys.del })}
       </p>
       <p class="kbd-hint text-xs text-stone-400">{keys.esc} · {m.cancel}</p>
     </div>
