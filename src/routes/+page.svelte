@@ -64,13 +64,17 @@
       mode = next;
       return;
     }
-    // direction-aware swap: the composer slides the way the toggle thumb went
+    // direction-aware swap: the composer slides the way the toggle thumb went;
+    // the anim flag scopes the slide to this transition only, so unrelated
+    // view transitions (list sink) leave the composer perfectly still
     document.documentElement.dataset.modeFrom = mode;
-    document.startViewTransition(() =>
+    document.documentElement.dataset.modeAnim = "";
+    const t = document.startViewTransition(() =>
       flushSync(() => {
         mode = next;
       }),
     );
+    t.finished.finally(() => delete document.documentElement.dataset.modeAnim);
   }
 
   const today = $derived(dayKeyOffset(now, 0));

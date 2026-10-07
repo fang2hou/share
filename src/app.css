@@ -138,11 +138,14 @@ html[data-mode-from="file"] {
   --vt-in-x: -28px;
 }
 
-::view-transition-old(composer) {
+/* the slide plays only for a mode switch (setMode raises data-mode-anim for
+   exactly that transition); unrelated view transitions snapshot the composer
+   too, and without this gate they would replay the slide out of nowhere */
+html[data-mode-anim]::view-transition-old(composer) {
   animation: vt-out 0.2s ease both;
 }
 
-::view-transition-new(composer) {
+html[data-mode-anim]::view-transition-new(composer) {
   animation: vt-in 0.2s ease both;
 }
 
@@ -222,7 +225,6 @@ pre.shiki code {
 }
 
 /* an open popover must escape the card's own paint order: view-transition
-   names give every card a stacking context, so later siblings would otherwise
    paint over the menu; lift the host card while hovered or while it hosts a
    floating panel (touch: no hover, the :has() arm covers it) */
 article[data-card-id]:hover,
