@@ -76,23 +76,25 @@
 </script>
 
 {#if mode === "text"}
-  <div
-    class="vt-composer squircle relative z-20 rounded-2xl border border-stone-300/90 bg-white shadow-sm transition focus-within:border-stone-500 focus-within:ring-4 focus-within:ring-orange-500/15"
-  >
-    <!-- svelte-ignore a11y_autofocus -->
-    <textarea
-      bind:this={area}
-      bind:value
-      onkeydown={onKeydown}
-      oninput={markScrolling}
-      onscroll={markScrolling}
-      autofocus
-      placeholder={hasKeyboard
-        ? m.placeholder.replaceAll("{saveKeys}", keys.save)
-        : m.placeholderPlain}
-      class="scroll-autohide block max-h-[min(30lh,70dvh)] min-h-[2lh] w-full resize-none overflow-y-auto bg-transparent px-5 pt-4 text-lg leading-relaxed field-sizing-content focus:outline-none"
-    ></textarea>
-    <div class="flex flex-wrap items-center gap-2 px-2 pb-2">
+  <div class="relative z-20 space-y-2.5">
+    <div
+      class="vt-composer squircle rounded-2xl border border-stone-300/90 bg-white shadow-sm transition focus-within:border-stone-500 focus-within:ring-4 focus-within:ring-orange-500/15"
+    >
+      <!-- svelte-ignore a11y_autofocus -->
+      <textarea
+        bind:this={area}
+        bind:value
+        onkeydown={onKeydown}
+        oninput={markScrolling}
+        onscroll={markScrolling}
+        autofocus
+        placeholder={hasKeyboard
+          ? m.placeholder.replaceAll("{saveKeys}", keys.save)
+          : m.placeholderPlain}
+        class="scroll-autohide block max-h-[min(30lh,70dvh)] min-h-[2lh] w-full resize-none overflow-y-auto bg-transparent px-5 py-4 text-lg leading-relaxed field-sizing-content focus:outline-none"
+      ></textarea>
+    </div>
+    <div class="flex flex-wrap items-center gap-2">
       <input
         bind:value={filename}
         maxlength={64}
