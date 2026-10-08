@@ -174,7 +174,7 @@
   }
 
   function acknowledgeUnread(): void {
-    if (document.visibilityState !== "visible") return;
+    if (document.visibilityState !== "visible" || !document.hasFocus() || unread === 0) return;
     unread = 0;
     applyUnread();
   }
@@ -295,11 +295,12 @@
   }
 
   onMount(() => {
-    mountFavicon();
+    const cleanupFavicon = mountFavicon();
     applyUnread();
     space.connect();
     const tickId = setInterval(() => (now = Date.now()), 15_000);
     return () => {
+      cleanupFavicon();
       clearInterval(tickId);
       clearTimeout(clearNoticeId);
       stage.dispose();
