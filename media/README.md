@@ -1,15 +1,16 @@
 # Media assets
 
 Design sources and generated images for the share brand (favicon, dynamic
-unread badge, OG card, GitHub avatar, iOS home-screen icon). Build scripts are
-not kept here; everything below is the durable source of truth.
+unread badge, OG card, GitHub avatar, iOS home-screen icon). Run
+`node scripts/build-favicon.mjs` to regenerate the SVG favicon and badge
+previews. Development and production builds run this step automatically.
 
 ## Sources (edit these, then regenerate derivatives)
 
 - `icon-parts.json` — icon geometry master: squircle shell (superellipse n=5),
   "S"/digit/"+" outlines extracted from IBM Plex Sans SC Bold, dot placement,
-  and the palette. `src/lib/favicon.ts` and `src/lib/assets/favicon.svg` are
-  baked from this file.
+  and the palette. `src/lib/favicon-svg.ts` reads this file directly; the
+  browser and build script share that renderer. The shipped file is `static/favicon.svg`.
 - `og-src.html` — source of `static/og.png` (1200×630 card). Rasterize with
   headless Chrome at `--window-size=1200,630 --force-device-scale-factor=1`.
 - `favicon.svg` — shipped favicon: squircle crop, dark-mode aware via
