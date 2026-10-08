@@ -310,7 +310,7 @@
         id="{id}-list"
         role="listbox"
         aria-label={placeholder}
-        class="picker-options relative overflow-y-auto overscroll-contain p-1 pr-3"
+        class="picker-options relative overflow-y-auto overscroll-contain p-1"
       >
         {#each filtered as entry, i (entry.suffix)}
           <li role="presentation">
@@ -418,7 +418,7 @@
     padding: 0;
     border: 0;
     border-radius: 999px;
-    background: rgb(168 162 158 / 0.8);
+    background: rgb(168 162 158 / 0.35);
     opacity: 0;
     pointer-events: none;
     touch-action: none;
@@ -432,7 +432,7 @@
   }
 
   .picker-scroll-thumb[data-dragging="true"] {
-    background: #78716c;
+    background: rgb(120 113 108 / 0.55);
   }
 
   .picker[data-above="true"] .picker-panel {
