@@ -13,6 +13,7 @@ import { messages, pickLang, type Lang } from "../shared/i18n.ts";
 import { fileResponse, zipResponse, selectedFiles, readFile } from "./file-transfer.ts";
 import { fileView, passwordView, publicFiles, textView } from "./share-view.ts";
 import { grantCookie, hasGrant } from "./share-password.ts";
+import { shareImage } from "./share-image.ts";
 
 import { multipartUpload, registerFile } from "./file-upload.ts";
 
@@ -36,6 +37,16 @@ function bodyLength(request: Request): number {
 }
 
 async function homepage(request: Request, env: Env): Promise<Response> {
+  if (isLinkPreview(request)) {
+    const shell = await env.ASSETS.fetch(new Request(new URL("/", request.url)));
+    const headers = new Headers(shell.headers);
+    headers.set("cache-control", "no-store");
+    headers.delete("etag");
+    return new Response(request.method === "HEAD" ? null : shell.body, {
+      status: shell.status,
+      headers,
+    });
+  }
   const session = await readSession(request, env);
   if (!session) return new Response(null, { status: 302, headers: { Location: "/auth/login" } });
 
@@ -69,6 +80,10 @@ async function homepage(request: Request, env: Env): Promise<Response> {
   headers.set("cache-control", "no-store");
   headers.delete("etag");
   return new Response(transformed.body, { status: transformed.status, headers });
+}
+
+function isLinkPreview(request: Request): boolean {
+  return /(?:^|[\s;(])Discordbot(?:\/|[\s;)]|$)/i.test(request.headers.get("User-Agent") ?? "");
 }
 
 function validateText(value: unknown): string | null {
@@ -386,21 +401,62 @@ async function publicShare(
           },
         });
   }
-  if (request.method !== "GET") return notFound();
+  if (
+    request.method !== "GET" &&
+    !(
+      request.method === "HEAD" &&
+      ((action === "" && isLinkPreview(request)) || action === "/og.png")
+    )
+  )
+    return notFound();
   const info = await stub.inspectShared(token);
   if (!info) return notFound();
+  if (action === "/og.png") {
+    // Image URLs are public; an unlock cookie must never publish protected metadata.
+    if (info.passwordHash || info.item.kind !== "file") return notFound();
+    if (request.method === "HEAD")
+      return new Response(null, {
+        headers: {
+          "content-type": "image/png",
+          "cache-control": "no-store",
+          "x-robots-tag": "noindex",
+          "x-content-type-options": "nosniff",
+        },
+      });
+    const imageLang = pickLang([url.searchParams.get("lang") ?? lang]);
+    return shareImage(
+      {
+        kind: "files",
+        lang: imageLang,
+        path,
+        url: url.origin + path,
+        image: "",
+        files: publicFiles(info.item),
+      },
+      env.ASSETS,
+    );
+  }
   if (
     info.passwordHash &&
-    !(await hasGrant(request, env.SESSION_SECRET, path, info.passwordHash))
+    (isLinkPreview(request) ||
+      !(await hasGrant(request, env.SESSION_SECRET, path, info.passwordHash)))
   ) {
-    return action === "" ? passwordView(lang, path) : notFound();
+    return action === "" ? passwordView(lang, request.url) : notFound();
   }
   if (info.item.kind === "file") {
     if (
       action === "" &&
-      (info.item.files || info.passwordHash || url.searchParams.get("view") === "1")
+      (isLinkPreview(request) ||
+        info.item.files ||
+        info.passwordHash ||
+        url.searchParams.get("view") === "1")
     )
-      return fileView(lang, publicFiles(info.item), path);
+      return fileView(
+        lang,
+        publicFiles(info.item),
+        request.url,
+        info.passwordHash ? url.origin + "/og.png" : `${url.origin}${path}/og.png?lang=${lang}`,
+      );
     if (action === "/zip") {
       const files = selectedFiles(publicFiles(info.item), url.searchParams.get("ids"));
       if (!files) return notFound();
@@ -430,6 +486,7 @@ async function publicShare(
     );
   }
   if (action) return notFound();
+  if (isLinkPreview(request)) return textView(lang, info.item, request.url);
   const result = await stub.accessShared(token, info.passwordHash);
   // uniform 404 for missing, disabled, wrong token, and exhausted budget alike — no enumeration oracle
   if (result === null || result.exhausted) {
@@ -445,12 +502,18 @@ export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
     const path = url.pathname;
-    if (path === "/" && request.method === "GET") return homepage(request, env);
+    if (
+      path === "/" &&
+      (request.method === "GET" || (request.method === "HEAD" && isLinkPreview(request)))
+    )
+      return homepage(request, env);
     const sharePath = path.match(
-      /^\/f\/(\d+)\.([A-Za-z0-9_-]{22,43})(\/unlock|\/zip|\/files\/[^/]+)?$/,
+      /^\/f\/(\d+)\.([A-Za-z0-9_-]{22,43})(\/unlock|\/zip|\/og\.png|\/files\/[^/]+)?$/,
     );
-    if (sharePath && sharePath[1] !== undefined && sharePath[2] !== undefined)
-      return publicShare(request, env, sharePath[1], sharePath[2], sharePath[3]);
+    if (sharePath && sharePath[1] !== undefined && sharePath[2] !== undefined) {
+      const response = await publicShare(request, env, sharePath[1], sharePath[2], sharePath[3]);
+      return request.method === "HEAD" ? new Response(null, response) : response;
+    }
     if (path === "/auth/login" && request.method === "GET")
       return await loginRedirect(request, env);
     if (path === "/auth/callback" && request.method === "GET") return handleCallback(request, env);

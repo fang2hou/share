@@ -13,6 +13,8 @@ previews. Development and production builds run this step automatically.
   browser and build script share that renderer. The shipped file is `static/favicon.svg`.
 - `og-src.html` — source of `static/og.png` (1200×630 card). Rasterize with
   headless Chrome at `--window-size=1200,630 --force-device-scale-factor=1`.
+- `worker/share-image.ts` renders per-share file cards as 1200×630 PNGs in the
+  same palette and typography; its font assets and licenses live in `static/og-fonts/`.
 - `favicon.svg` — shipped favicon: squircle crop, dark-mode aware via
   `prefers-color-scheme`.
 - `favicon-dark.svg` — the dark variant rendered statically (preview/fallback).

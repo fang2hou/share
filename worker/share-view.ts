@@ -22,14 +22,37 @@ function page(view: PublicView): Response {
     },
   );
 }
-export function passwordView(lang: Lang, path: string): Response {
-  return page({ kind: "password", lang, path });
+export function passwordView(lang: Lang, url: string): Response {
+  const location = new URL(url);
+  return page({
+    kind: "password",
+    lang,
+    path: location.pathname,
+    url: location.origin + location.pathname,
+    image: location.origin + "/og.png",
+  });
 }
-export function fileView(lang: Lang, files: StoredFile[], path: string): Response {
-  return page({ kind: "files", lang, path, files });
+export function fileView(lang: Lang, files: StoredFile[], url: string, image: string): Response {
+  const location = new URL(url);
+  return page({
+    kind: "files",
+    lang,
+    path: location.pathname,
+    url: location.origin + location.pathname,
+    image,
+    files,
+  });
 }
 export function textView(lang: Lang, item: Item, url: string): Response {
-  return page({ kind: "text", lang, path: new URL(url).pathname, text: item.text, url });
+  const location = new URL(url);
+  return page({
+    kind: "text",
+    lang,
+    path: location.pathname,
+    text: item.text,
+    url: location.origin + location.pathname,
+    image: location.origin + "/og.png",
+  });
 }
 
 export function publicFiles(item: Item): StoredFile[] {

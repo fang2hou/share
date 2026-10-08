@@ -37,6 +37,12 @@ The owner and public file pages support individual downloads, selections, ZIP ar
 
 A public file listing and password prompt do not consume the access budget. Each content transfer, including a preview or range request, consumes one access; one ZIP response consumes one access for the whole selection. Protected file names and content do not appear on the password gate.
 
+## Link previews
+
+Discord's crawler receives the public SPA shell at `/` without a session or private bootstrap data, so the website card uses the existing `static/og.png`. Human visitors retain the login redirect. Public share pages include server-rendered Open Graph and Twitter metadata in the visitor's language. Legacy single-file links still download directly for human visitors; Discord receives the file listing instead. Discord text previews use the same capability validation without consuming an access.
+
+Unprotected files advertise `/f/<sub>.<token>/og.png?lang=<locale>`. The Worker renders a 1200×630 PNG with resvg WASM using the existing brand palette, file names, MIME type, size, or collection count and total size. Long names are bounded to two lines, and all dynamic SVG text is XML-escaped. Fonts are fetched from the static-assets binding, never from third-party services. The PNG route inspects the live share before rendering, consumes no access, and returns no-store/noindex responses. Revoked, exhausted, missing, and password-protected shares return the same 404; unlock cookies cannot make protected image URLs public. Password gates and unlocked protected pages use the generic brand image.
+
 ## Public-page rendering
 
 The SPA and public pages compose `AppHeader.svelte` and `FileBrowser.svelte` directly. Component markup, interaction logic, language persistence, fonts, and the stylesheet have one source. Public pages use Svelte `render` in the Worker and `hydrate` in the browser; the Worker contains no hand-written UI or inline event script.
