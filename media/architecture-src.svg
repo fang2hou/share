@@ -1,0 +1,148 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="1286" viewBox="0 0 1120 1286" fill="none" role="img" aria-labelledby="title desc">
+  <title id="title">share architecture and Discord link-preview flow</title>
+  <desc id="desc">SvelteKit clients connect over HTTPS and WebSockets to a Cloudflare Worker. GitHub OAuth establishes an HMAC session. Workers Static Assets provides the SPA shell, scripts, images, and fonts. Each user has one SQLite Durable Object for text, metadata, share tokens, access budgets, and hibernating WebSocket broadcasts. R2 stores file bytes and supports multipart uploads, range reads, and streaming ZIP downloads. HTMLRewriter injects initial item data into the homepage. For Discord public-share previews, the Worker validates the token through the owner's Durable Object and renders localized Svelte HTML with Open Graph metadata. A second request for an unprotected file share's OG image revalidates the share and renders live file metadata to a 1200 by 630 PNG with resvg WASM and bundled fonts. Text and password-protected shares use the static brand image; protected metadata stays hidden. Discord requests to the homepage receive the public shell without login or private bootstrap data. Preview requests consume no access budget. Invalid, revoked, or exhausted shares return 404.</desc>
+  <rect width="1120" height="1286" rx="28" fill="#faf7f2"/>
+
+  <style>
+    text { font-family: 'IBM Plex Sans'; }
+    .heading { fill: #1c1917; font-size: 22px; font-weight: 600; letter-spacing: -.5px; }
+    .body { fill: #57534e; font-size: 16px; }
+    .label { fill: #78716c; font-size: 13px; }
+    .code { fill: #c2410c; font-family: 'IBM Plex Mono'; font-size: 13px; }
+    .line { stroke: #ea580c; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  </style>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="m2 1 4 4-4 4" stroke="#ea580c" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+  </defs>
+  <text x="40" y="62" fill="#1c1917" font-size="32" font-weight="700" letter-spacing="-1">Runtime architecture</text>
+  <text x="40" y="96" class="body">Cloudflare handles routing, persistent state, realtime updates, and file storage.</text>
+  <circle cx="1070" cy="52" r="7" fill="#ea580c"/>
+  <!-- The infrastructure boundary contains only Cloudflare services. -->
+  <rect x="340" y="126" width="760" height="484" rx="24" stroke="#d6d3d1" stroke-dasharray="5 7"/>
+  <text x="364" y="164" fill="#c2410c" font-size="16" font-weight="600">CLOUDFLARE</text>
+  <text x="40" y="164" class="label">BROWSER / EXTERNAL IDENTITY</text>
+
+  <rect x="40" y="200" width="240" height="184" rx="20" fill="#fff" stroke="#e7e5e4"/>
+  <text x="64" y="240" class="heading">SvelteKit SPA</text>
+  <text x="64" y="272" class="body">Prerendered shell; SSR off</text>
+  <text x="64" y="300" class="body">Client state + uploads</text>
+  <text x="64" y="328" class="body">Shared Svelte UI</text>
+  <text x="64" y="360" class="label">All devices of the same user</text>
+
+  <rect x="380" y="200" width="320" height="184" rx="20" fill="#fff" stroke="#fed7aa"/>
+  <text x="404" y="240" class="heading">Cloudflare Worker</text>
+  <text x="404" y="272" class="code">/auth/*  /api/*  /api/ws</text>
+  <text x="404" y="300" class="code">/f/&lt;sub&gt;.&lt;token&gt;</text>
+  <text x="404" y="328" class="body">Session + origin checks</text>
+  <text x="404" y="360" class="body">Public Svelte SSR + OG routes</text>
+
+  <rect x="820" y="200" width="256" height="184" rx="20" fill="#fff" stroke="#e7e5e4"/>
+  <text x="844" y="240" class="heading">Durable Object</text>
+  <text x="844" y="272" class="code">SPACE · gh:&lt;userId&gt;</text>
+  <text x="844" y="300" class="body">SQLite: text + metadata</text>
+  <text x="844" y="328" class="body">Share tokens + budgets</text>
+  <text x="844" y="360" class="body">WebSocket hibernation</text>
+
+  <path d="M282 290h96" class="line" marker-end="url(#arrow)"/>
+  <path d="m288 285-6 5 6 5" class="line"/>
+  <text x="330" y="258" text-anchor="middle" class="label">HTTPS</text>
+  <text x="330" y="278" text-anchor="middle" class="label">+ WS</text>
+  <path d="M702 290h116" class="line" marker-end="url(#arrow)"/>
+  <path d="m708 285-6 5 6 5" class="line"/>
+  <text x="760" y="258" text-anchor="middle" class="label">RPC + WS</text>
+  <text x="760" y="278" text-anchor="middle" class="label">Per-user routing</text>
+
+  <rect x="40" y="436" width="240" height="148" rx="20" fill="#fff" stroke="#e7e5e4"/>
+  <text x="64" y="476" class="heading">GitHub OAuth</text>
+  <text x="64" y="508" class="body">Login + callback</text>
+  <text x="64" y="536" class="body">Worker issues an HMAC</text>
+  <text x="64" y="560" class="body">session cookie (30 days)</text>
+  <path d="M282 510h24q10 0 10-10V354q0-10 10-10h52" class="line" marker-end="url(#arrow)"/>
+  <text x="307" y="414" class="label" text-anchor="middle" transform="rotate(-90 307 414)">OAuth exchange</text>
+
+  <rect x="380" y="436" width="320" height="148" rx="20" fill="#fff" stroke="#e7e5e4"/>
+  <text x="404" y="476" class="heading">Workers Static Assets</text>
+  <text x="404" y="508" class="code">ASSETS · build/</text>
+  <text x="404" y="536" class="body">SPA shell, CSS, hydration JS</text>
+  <text x="404" y="560" class="body">Brand OG image + bundled fonts</text>
+  <path d="M540 386v48" class="line" marker-end="url(#arrow)"/>
+  <path d="m535 392 5-6 5 6" class="line"/>
+  <text x="554" y="418" class="label">Asset fetch</text>
+
+  <rect x="820" y="436" width="256" height="148" rx="20" fill="#fff" stroke="#e7e5e4"/>
+  <text x="844" y="476" class="heading">R2 Object Storage</text>
+  <text x="844" y="508" class="code">FILES · share-files</text>
+  <text x="844" y="536" class="body">File bytes + multipart</text>
+  <text x="844" y="560" class="body">Range reads + ZIP streams</text>
+  <path d="M702 344h46q10 0 10 10v146q0 10 10 10h50" class="line" marker-end="url(#arrow)"/>
+  <path d="m708 339-6 5 6 5" class="line"/>
+  <text x="772" y="414" class="label" transform="rotate(90 772 414)">File streams</text>
+
+  <path d="M40 634h1040" stroke="#e7e5e4"/>
+  <circle cx="46" cy="661" r="4" fill="#ea580c"/>
+  <text x="60" y="666" class="body">First paint: ASSETS shell + DO item data; HTMLRewriter bootstrap in one response.</text>
+  <circle cx="46" cy="692" r="4" fill="#ea580c"/>
+  <text x="60" y="697" class="body">Realtime: DO broadcasts via /api/ws to connected devices; client polling is the fallback.</text>
+
+  <path d="M40 736h1040" stroke="#e7e5e4"/>
+  <g transform="translate(0 724)">
+
+  <defs>
+    <marker id="preview-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="m2 1 4 4-4 4" stroke="#ea580c" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+  </defs>
+  <text x="40" y="62" fill="#1c1917" font-size="32" font-weight="700" letter-spacing="-1">Discord link previews</text>
+  <text x="40" y="96" class="body">Discord receives server-rendered metadata; file cards are rendered on demand in the Worker.</text>
+  <circle cx="1070" cy="52" r="7" fill="#ea580c"/>
+  <text x="40" y="143" fill="#c2410c" font-size="15" font-weight="600">UNPROTECTED FILE SHARE · TWO HTTP REQUESTS</text>
+
+  <!-- Requests for HTML and its advertised OG image are separate. -->
+  <rect x="40" y="166" width="228" height="200" rx="20" fill="#fff" stroke="#e7e5e4"/>
+  <text x="64" y="198" class="label">01 / REQUEST</text>
+  <text x="64" y="233" class="heading">Discordbot</text>
+  <text x="64" y="267" class="code">GET /f/&lt;sub&gt;.&lt;token&gt;</text>
+  <text x="64" y="300" class="body">User-Agent detection</text>
+  <text x="64" y="328" class="body">No login required</text>
+
+  <rect x="310" y="166" width="228" height="200" rx="20" fill="#fff" stroke="#e7e5e4"/>
+  <text x="334" y="198" class="label">02 / VALIDATE</text>
+  <text x="334" y="233" class="heading">Worker / DO</text>
+  <text x="334" y="267" class="code">inspectShared(token)</text>
+  <text x="334" y="300" class="body">Owner-scoped lookup</text>
+  <text x="334" y="328" class="body" style="font-size: 15px">Live token + budget check</text>
+
+  <rect x="580" y="166" width="228" height="200" rx="20" fill="#fff" stroke="#e7e5e4"/>
+  <text x="604" y="198" class="label">03 / HTML RESPONSE</text>
+  <text x="604" y="233" class="heading">Svelte SSR + OG</text>
+  <text x="604" y="267" class="code">og:image: …/og.png</text>
+  <text x="604" y="300" class="body">Localized file listing</text>
+  <text x="604" y="328" class="body">Accept-Language aware</text>
+
+  <rect x="850" y="166" width="228" height="200" rx="20" fill="#fff7ed" stroke="#fed7aa"/>
+  <text x="874" y="198" class="label">04 / IMAGE REQUEST</text>
+  <text x="874" y="233" class="heading">resvg WASM</text>
+  <text x="874" y="267" class="code">SVG to 1200×630 PNG</text>
+  <text x="874" y="300" class="body">Revalidate live share</text>
+  <text x="874" y="328" class="body">Metadata + ASSETS fonts</text>
+
+  <path d="M270 258h38" class="line" marker-end="url(#preview-arrow)"/>
+  <path d="M540 258h38" class="line" marker-end="url(#preview-arrow)"/>
+  <path d="M810 258h38" class="line" marker-end="url(#preview-arrow)"/>
+  <text x="289" y="245" text-anchor="middle" class="label">GET</text>
+  <text x="559" y="245" text-anchor="middle" class="label">SSR</text>
+  <text x="829" y="245" text-anchor="middle" class="label">GET</text>
+
+  <rect x="40" y="390" width="1038" height="58" rx="16" fill="#fff" stroke="#e7e5e4"/>
+  <circle cx="64" cy="419" r="4" fill="#ea580c"/>
+  <text x="80" y="425" class="body">Preview requests consume no access budget · no-store responses · invalid / revoked / exhausted: 404</text>
+  <text x="40" y="482" fill="#1c1917" font-size="17" font-weight="600">Homepage /</text>
+  <text x="250" y="482" class="body">Public SPA shell + static /og.png; no private bootstrap or login redirect for Discord.</text>
+  <text x="40" y="513" fill="#1c1917" font-size="17" font-weight="600">Text / protected shares</text>
+  <text x="250" y="513" class="body">Static brand image; text gets OG metadata, protected content stays behind the gate.</text>
+  <text x="40" y="544" class="label">Dynamic file cards include file name, type, size, or collection count and total size. Password-protected /og.png routes return 404.</text>
+
+  </g>
+</svg>

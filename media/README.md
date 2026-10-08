@@ -11,6 +11,14 @@ previews. Development and production builds run this step automatically.
   Latin font with the app's letter spacing. All lettering is SVG paths; the
   orange dot uses the brand accent. A cream rounded rectangle keeps the ink
   lettering and orange dot consistent across light and dark themes.
+- `architecture-src.svg` — editable README architecture diagram covering the
+  Cloudflare Worker, per-user SQLite Durable Objects, Workers Static Assets,
+  R2, GitHub OAuth, realtime connections, and the Discord request flow for
+  public Svelte SSR and dynamic file OG images rendered with resvg WASM.
+  It uses the app's cream rounded background, orange accents, rounded connectors,
+  IBM Plex Sans, and IBM Plex Mono. Run `node scripts/build-architecture.mjs` to
+  verify text bounds and regenerate `architecture.svg` with outlined lettering
+  from the project's bundled fonts, so GitHub displays the exact same faces.
 - `icon-parts.json` — icon geometry master: squircle shell (superellipse n=5),
   "S"/digit/"+" outlines extracted from IBM Plex Sans SC Bold, dot placement,
   and the palette. `src/lib/favicon-svg.ts` reads this file directly; the
@@ -28,6 +36,10 @@ previews. Development and production builds run this step automatically.
 
 ## Generated images
 
+- `screenshot.png` — actual local application in English, captured at 2× pixel
+  density with IBM Plex fonts loaded. Shows a three-file collection (PNG, CSV,
+  JSON), a plain-text note, and a highlighted TypeScript snippet. The cream
+  background has rounded corners with transparent outer pixels.
 - `apple-touch-180.png` — 180×180 full-bleed crop of `full-light.svg`; copied
   to `static/apple-touch-icon.png` (iOS applies its own corner mask).
 - `github-1024.png` — 1024×1024 full-bleed crop for the GitHub OAuth App
