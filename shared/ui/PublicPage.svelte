@@ -2,6 +2,7 @@
   import { onDestroy, untrack } from "svelte";
   import type { PublicView } from "../public-view.js";
   import { messages } from "../i18n.js";
+  import { sharePreview } from "../share-preview.js";
   import ReadyFrame from "./ReadyFrame.svelte";
   import AppHeader from "./AppHeader.svelte";
   import FileBrowser from "./FileBrowser.svelte";
@@ -18,18 +19,7 @@
   let copyFailed = $state(false);
   let timer: ReturnType<typeof setTimeout>;
   const text = $derived(view.kind === "text" ? view.text : "");
-  const first = $derived(text.split("\n").find((line) => line.trim()) ?? "");
-  const title = $derived(
-    view.kind === "password"
-      ? m.protectedShare
-      : view.kind === "text"
-        ? first.length > 60
-          ? first.slice(0, 57) + "…"
-          : first || m.shareViewTitle
-        : view.files.length === 1
-          ? view.files[0]!.name
-          : m.shareViewTitle,
-  );
+  const preview = $derived(sharePreview(view, lang));
   async function unlock(event: SubmitEvent): Promise<void> {
     event.preventDefault();
     busy = true;
@@ -62,20 +52,26 @@
 </script>
 
 <svelte:head>
-  <title>Share · {title}</title>
+  <title>Share · {preview.title}</title>
+  <meta name="description" content={preview.description} />
   <meta name="robots" content="noindex" />
   <meta name="theme-color" content="#faf7f2" />
   <link rel="icon" href="/favicon.svg" />
   <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-  {#if view.kind === "text"}
-    <meta property="og:title" content={title} />
-    <meta property="og:description" content={text.replaceAll(/\s+/g, " ").trim().slice(0, 200)} />
-    <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="share" />
-    <meta property="og:url" content={view.url} />
-    <meta property="og:image" content={new URL(view.url).origin + "/og.png"} />
-    <meta name="twitter:card" content="summary_large_image" />
-  {/if}
+  <meta property="og:title" content={preview.title} />
+  <meta property="og:description" content={preview.description} />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="share" />
+  <meta property="og:url" content={view.url} />
+  <meta property="og:image" content={view.image} />
+  <meta property="og:image:type" content="image/png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content={preview.title} />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content={preview.title} />
+  <meta name="twitter:description" content={preview.description} />
+  <meta name="twitter:image" content={view.image} />
 </svelte:head>
 <ReadyFrame {lang}>
   <div
