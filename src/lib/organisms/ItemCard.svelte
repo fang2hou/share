@@ -279,7 +279,7 @@
       {/if}
       <FileBrowser files={cardFiles} base="/api/files/{item.id}" {m} />
     {:else if codeLang}
-      <div class="mt-2 overflow-hidden rounded-lg border border-stone-200">
+      <div class="mt-3 overflow-hidden rounded-lg border border-stone-200">
         <div
           class="flex items-center justify-between border-b border-stone-200 bg-stone-100/70 py-1 pr-2.5 pl-3"
         >
