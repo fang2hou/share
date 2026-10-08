@@ -386,7 +386,7 @@ describe("share links", () => {
       expect(data).toBeDefined();
       expect(JSON.parse(data!)).toMatchObject({ kind: "text", lang, text });
       expect(data).toContain("\\u003c/script>");
-      expect(html).toMatch(/class="[^"]*\bsite-logo\b[^"]*"/);
+      expect(html).toMatch(/<a[^>]*aria-label="share"/);
       const assetPath = /<script type="module" src="([^"]+)"/.exec(html)?.[1];
       expect(assetPath).toBeDefined();
       const asset = await SELF.fetch(BASE + assetPath);

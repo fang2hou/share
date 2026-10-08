@@ -15,7 +15,10 @@
 
 {#if variant === "logo"}
   <!-- The wordmark period scales with the lettering and follows connection state. -->
-  <span class="site-logo-dot {color}" title={status}></span>
+  <span
+    class="ml-[0.18em] inline-block size-[0.24em] rounded-full align-baseline {color}"
+    title={status}
+  ></span>
 {:else}
   <span class="size-2 rounded-full {color}" title={status}></span>
 {/if}

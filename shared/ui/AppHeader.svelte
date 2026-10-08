@@ -52,7 +52,9 @@
       onPickLanguage(event.newValue as Lang);
   }}
 />
-<header class="app-header flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+<header
+  class="[--header-control-height:1.75rem] sm:[--header-control-height:2rem] pointer-coarse:[--header-control-height:2.125rem] flex flex-wrap items-center justify-between gap-x-3 gap-y-2"
+>
   <div class="flex items-center gap-3">
     <Logo {status} />
     {#if mode && onPickMode}<ModeSwitcher

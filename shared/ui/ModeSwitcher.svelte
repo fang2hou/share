@@ -20,15 +20,17 @@
   aria-label="{labelText} / {labelFiles}"
 >
   <span
-    class="absolute inset-y-1 left-1 w-[calc(50%-0.25rem)] rounded-lg bg-stone-200 transition-transform duration-200 ease-out"
-    style="transform: translateX({mode === 'file' ? '100%' : '0%'})"
+    class="absolute inset-y-1 left-1 w-[calc(50%-0.25rem)] rounded-lg bg-stone-200 transition-transform duration-200 ease-out {mode ===
+    'file'
+      ? 'translate-x-full'
+      : ''}"
     aria-hidden="true"
   ></span>
   <button
     onclick={() => onPick("text")}
     aria-pressed={mode === "text"}
     title={labelText}
-    class="relative z-10 header-control header-mode-control flex items-center justify-center rounded-lg transition-colors duration-200 {mode ===
+    class="relative z-10 size-(--header-control-height) flex items-center justify-center rounded-lg transition-colors duration-200 {mode ===
     'text'
       ? 'text-stone-900'
       : 'text-stone-400 hover:text-stone-700'}"
@@ -39,7 +41,7 @@
     onclick={() => onPick("file")}
     aria-pressed={mode === "file"}
     title={labelFiles}
-    class="relative z-10 header-control header-mode-control flex items-center justify-center rounded-lg transition-colors duration-200 {mode ===
+    class="relative z-10 size-(--header-control-height) flex items-center justify-center rounded-lg transition-colors duration-200 {mode ===
     'file'
       ? 'text-stone-900'
       : 'text-stone-400 hover:text-stone-700'}"

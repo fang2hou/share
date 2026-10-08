@@ -169,8 +169,8 @@
 
 <article
   data-card-id={item.id}
-  style="--vt-item: item-{item.id}; --file-list-radius: 7px"
-  class="card-hover squircle relative rounded-2xl border border-stone-200/80 bg-white p-4 transition {pending
+  style:view-transition-name={`item-${item.id}`}
+  class="squircle relative hover:z-1 hover:border-stone-300 hover:bg-[#fdfcfa] has-[[data-floating]]:z-1 [--file-list-radius:7px] rounded-2xl border border-stone-200/80 bg-white p-4 transition {pending
     ? 'opacity-60'
     : ''}"
 >
@@ -180,14 +180,14 @@
       bind:value={draft}
       onkeydown={onKeydown}
       autofocus
-      class="squircle min-h-20 w-full rounded-xl border border-stone-300/90 bg-white p-3 text-base leading-relaxed field-sizing-content transition placeholder:text-stone-400 hover:border-stone-400 focus:border-stone-500 focus:outline-none"
+      class="min-h-20 w-full rounded-lg border border-stone-300/90 bg-white p-3 text-base leading-relaxed field-sizing-content transition placeholder:text-stone-400 hover:border-stone-400 focus:border-stone-500 focus:outline-none pointer-fine:rounded-xl pointer-fine:squircle"
     ></textarea>
     <div class="mt-2 flex flex-wrap items-center gap-2">
       <input
         bind:value={draftFilename}
         maxlength={64}
         placeholder={m.filenamePlaceholder}
-        class="code-font h-9 min-w-32 flex-1 rounded-lg border border-stone-300/90 bg-white px-2.5 text-sm text-stone-700 placeholder:font-sans placeholder:text-stone-400 hover:border-stone-400 focus:border-stone-500 focus:outline-none"
+        class="font-mono h-9 min-w-32 flex-1 rounded-lg border border-stone-300/90 bg-white px-2.5 text-base pointer-fine:text-sm text-stone-700 placeholder:font-sans placeholder:text-stone-400 hover:border-stone-400 focus:border-stone-500 focus:outline-none"
       />
       <span
         class="relative top-0.5 text-xl leading-none font-bold text-stone-600"
@@ -287,7 +287,7 @@
             {codeLang.name}
           </span>
           {#if item.filename}
-            <span class="code-font truncate text-xs text-stone-400">
+            <span class="font-mono truncate text-xs text-stone-400">
               {item.filename}{item.suffix ? `.${item.suffix}` : ""}
             </span>
           {/if}
@@ -296,7 +296,7 @@
           {@html highlighted}
         {:else}
           <pre
-            class="code-font m-0 overflow-x-auto bg-stone-50 p-3 text-[13px] leading-relaxed text-stone-800">{item.text}</pre>
+            class="font-mono m-0 overflow-x-auto bg-stone-50 p-3 text-[13px] leading-relaxed text-stone-800">{item.text}</pre>
         {/if}
       </div>
     {:else}
