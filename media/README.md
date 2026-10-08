@@ -19,6 +19,8 @@ previews. Development and production builds run this step automatically.
   IBM Plex Sans, and IBM Plex Mono. Run `node scripts/build-architecture.mjs` to
   verify text bounds and regenerate `architecture.svg` with outlined lettering
   from the project's bundled fonts, so GitHub displays the exact same faces.
+  Arrowheads are explicit paths, not auto-oriented SVG markers, so outlining
+  preserves their direction. Connector tips sit 6px outside the card borders.
 - `icon-parts.json` — icon geometry master: squircle shell (superellipse n=5),
   "S"/digit/"+" outlines extracted from IBM Plex Sans SC Bold, dot placement,
   and the palette. `src/lib/favicon-svg.ts` reads this file directly; the

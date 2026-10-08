@@ -11,11 +11,6 @@
     .code { fill: #c2410c; font-family: 'IBM Plex Mono'; font-size: 13px; }
     .line { stroke: #ea580c; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
   </style>
-  <defs>
-    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-      <path d="m2 1 4 4-4 4" stroke="#ea580c" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-    </marker>
-  </defs>
   <text x="40" y="62" fill="#1c1917" font-size="32" font-weight="700" letter-spacing="-1">Runtime architecture</text>
   <text x="40" y="96" class="body">Cloudflare handles routing, persistent state, realtime updates, and file storage.</text>
   <circle cx="1070" cy="52" r="7" fill="#ea580c"/>
@@ -45,12 +40,11 @@
   <text x="844" y="328" class="body">Share tokens + budgets</text>
   <text x="844" y="360" class="body">WebSocket hibernation</text>
 
-  <path d="M282 290h96" class="line" marker-end="url(#arrow)"/>
-  <path d="m288 285-6 5 6 5" class="line"/>
+  <!-- Explicit arrowheads preserve alignment and direction when resvg outlines the SVG. -->
+  <path d="M286 292H374 M292 287L286 292L292 297 M368 287L374 292L368 297" class="line"/>
   <text x="330" y="258" text-anchor="middle" class="label">HTTPS</text>
   <text x="330" y="278" text-anchor="middle" class="label">+ WS</text>
-  <path d="M702 290h116" class="line" marker-end="url(#arrow)"/>
-  <path d="m708 285-6 5 6 5" class="line"/>
+  <path d="M706 292H814 M712 287L706 292L712 297 M808 287L814 292L808 297" class="line"/>
   <text x="760" y="258" text-anchor="middle" class="label">RPC + WS</text>
   <text x="760" y="278" text-anchor="middle" class="label">Per-user routing</text>
 
@@ -59,7 +53,7 @@
   <text x="64" y="508" class="body">Login + callback</text>
   <text x="64" y="536" class="body">Worker issues an HMAC</text>
   <text x="64" y="560" class="body">session cookie (30 days)</text>
-  <path d="M282 510h24q10 0 10-10V354q0-10 10-10h52" class="line" marker-end="url(#arrow)"/>
+  <path d="M286 510H306Q316 510 316 500V354Q316 344 326 344H374 M292 505L286 510L292 515 M368 339L374 344L368 349" class="line"/>
   <text x="307" y="414" class="label" text-anchor="middle" transform="rotate(-90 307 414)">OAuth exchange</text>
 
   <rect x="380" y="436" width="320" height="148" rx="20" fill="#fff" stroke="#e7e5e4"/>
@@ -67,18 +61,16 @@
   <text x="404" y="508" class="code">ASSETS · build/</text>
   <text x="404" y="536" class="body">SPA shell, CSS, hydration JS</text>
   <text x="404" y="560" class="body">Brand OG image + bundled fonts</text>
-  <path d="M540 386v48" class="line" marker-end="url(#arrow)"/>
-  <path d="m535 392 5-6 5 6" class="line"/>
-  <text x="554" y="418" class="label">Asset fetch</text>
+  <path d="M540 390V430 M535 396L540 390L545 396 M535 424L540 430L545 424" class="line"/>
+  <text x="554" y="418" class="label">Fetch / return</text>
 
   <rect x="820" y="436" width="256" height="148" rx="20" fill="#fff" stroke="#e7e5e4"/>
   <text x="844" y="476" class="heading">R2 Object Storage</text>
   <text x="844" y="508" class="code">FILES · share-files</text>
   <text x="844" y="536" class="body">File bytes + multipart</text>
   <text x="844" y="560" class="body">Range reads + ZIP streams</text>
-  <path d="M702 344h46q10 0 10 10v146q0 10 10 10h50" class="line" marker-end="url(#arrow)"/>
-  <path d="m708 339-6 5 6 5" class="line"/>
-  <text x="772" y="414" class="label" transform="rotate(90 772 414)">File streams</text>
+  <path d="M706 344H748Q758 344 758 354V500Q758 510 768 510H814 M712 339L706 344L712 349 M808 505L814 510L808 515" class="line"/>
+  <text x="772" y="427" class="label" text-anchor="middle" transform="rotate(90 772 427)">File streams</text>
 
   <path d="M40 634h1040" stroke="#e7e5e4"/>
   <circle cx="46" cy="661" r="4" fill="#ea580c"/>
@@ -89,11 +81,6 @@
   <path d="M40 736h1040" stroke="#e7e5e4"/>
   <g transform="translate(0 724)">
 
-  <defs>
-    <marker id="preview-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-      <path d="m2 1 4 4-4 4" stroke="#ea580c" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-    </marker>
-  </defs>
   <text x="40" y="62" fill="#1c1917" font-size="32" font-weight="700" letter-spacing="-1">Discord link previews</text>
   <text x="40" y="96" class="body">Discord receives server-rendered metadata; file cards are rendered on demand in the Worker.</text>
   <circle cx="1070" cy="52" r="7" fill="#ea580c"/>
@@ -128,12 +115,12 @@
   <text x="874" y="300" class="body">Revalidate live share</text>
   <text x="874" y="328" class="body">Metadata + ASSETS fonts</text>
 
-  <path d="M270 258h38" class="line" marker-end="url(#preview-arrow)"/>
-  <path d="M540 258h38" class="line" marker-end="url(#preview-arrow)"/>
-  <path d="M810 258h38" class="line" marker-end="url(#preview-arrow)"/>
-  <text x="289" y="245" text-anchor="middle" class="label">GET</text>
-  <text x="559" y="245" text-anchor="middle" class="label">SSR</text>
-  <text x="829" y="245" text-anchor="middle" class="label">GET</text>
+  <path d="M274 266H304 M298 261L304 266L298 271" class="line"/>
+  <path d="M544 266H574 M568 261L574 266L568 271" class="line"/>
+  <path d="M814 266H844 M838 261L844 266L838 271" class="line"/>
+  <text x="289" y="247" text-anchor="middle" class="label">GET</text>
+  <text x="559" y="247" text-anchor="middle" class="label">SSR</text>
+  <text x="829" y="247" text-anchor="middle" class="label">GET</text>
 
   <rect x="40" y="390" width="1038" height="58" rx="16" fill="#fff" stroke="#e7e5e4"/>
   <circle cx="64" cy="419" r="4" fill="#ea580c"/>
