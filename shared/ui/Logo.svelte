@@ -8,7 +8,7 @@
   href="/"
   aria-label="share"
   draggable="false"
-  class="site-logo ui-chrome"
+  class="ui-chrome text-[length:calc(var(--header-control-height)/0.698)] leading-[1cap] font-bold tracking-[-0.04em] text-stone-900"
   {@attach suppressContextMenu}
 >
   share<StatusDot {status} variant="logo" />

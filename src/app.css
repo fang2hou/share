@@ -1,5 +1,14 @@
 @import "tailwindcss";
 
+@theme {
+  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --color-canvas: #faf7f2;
+}
+
+@theme inline {
+  --font-sans: var(--font-ui);
+}
+
 /* Self-hosted IBM Plex. Latin ships with the initial CSS (small slices);
    Japanese and Korean slices load on demand from shared/ui/fonts.ts. Every
    bundled face prefers the locally installed copy first, so machines with
@@ -57,242 +66,172 @@
     url("@fontsource/ibm-plex-mono/files/ibm-plex-mono-latin-400-normal.woff2") format("woff2");
 }
 
-html {
-  font-family:
-    "IBM Plex Sans", "IBM Plex Sans SC", "PingFang SC", "Microsoft YaHei UI", system-ui, sans-serif;
-  -webkit-text-size-adjust: 100%;
-}
-
-body {
-  background-color: #faf7f2;
-  /* app-like feel: no rubber-band page bounce or pull-to-refresh jank on iOS */
-  overscroll-behavior-y: none;
-  -webkit-tap-highlight-color: transparent;
-}
-
-button {
-  /* kill the legacy 300ms delay / double-tap zoom on iOS */
-  touch-action: manipulation;
-}
-
-.site-logo {
-  font-size: calc(var(--header-control-height) / 0.698);
-  line-height: 1cap;
-  font-weight: 700;
-  letter-spacing: -0.04em;
-  color: #1c1917;
-}
-
-.site-logo-dot {
-  margin-left: 0.18em;
-  display: inline-block;
-  width: 0.24em;
-  height: 0.24em;
-  vertical-align: baseline;
-  border-radius: 9999px;
-}
-
-/* Match the bundled Plex Sans cap height to the controls' inner surface. */
-.app-header {
-  --header-control-height: 1.75rem;
-}
-.header-control {
-  height: var(--header-control-height);
-}
-.header-mode-control {
-  width: var(--header-control-height);
-}
-@media (min-width: 640px) {
-  .app-header {
-    --header-control-height: 2rem;
+@layer base {
+  html {
+    --font-ui:
+      "IBM Plex Sans", "IBM Plex Sans SC", "PingFang SC", "Microsoft YaHei UI", system-ui,
+      sans-serif;
+    font-family: var(--font-ui);
+    -webkit-text-size-adjust: 100%;
   }
-}
-@media (pointer: coarse) {
-  .app-header {
-    --header-control-height: 2.125rem;
+
+  html:lang(zh-TW) {
+    font-family:
+      "IBM Plex Sans", "IBM Plex Sans TC", "PingFang TC", "Microsoft JhengHei UI", system-ui,
+      sans-serif;
+  }
+
+  html:lang(ja) {
+    font-family:
+      "IBM Plex Sans", "IBM Plex Sans JP", "Hiragino Sans", "Yu Gothic UI", system-ui, sans-serif;
+  }
+
+  html:lang(ko) {
+    font-family:
+      "IBM Plex Sans", "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui,
+      sans-serif;
+  }
+
+  body {
+    background-color: var(--color-canvas);
+    overscroll-behavior-y: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  button {
+    touch-action: manipulation;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  ::selection {
+    background-color: var(--color-orange-200);
   }
 }
 
-/* keyboard-shortcut hints (Shift+Enter, Esc) only make sense with a physical
-   keyboard; hide them on touch-primary devices */
-@media (hover: none) and (pointer: coarse) {
-  .kbd-hint {
+/* Register custom utilities so standard responsive and state variants work. */
+@utility squircle {
+  corner-shape: squircle;
+}
+
+@utility ui-chrome {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+@utility kbd-hint {
+  @media (hover: none) and (pointer: coarse) {
     display: none;
   }
 }
 
-/* Apple-style continuous corners; ignored by engines without corner-shape,
-   which fall back to the ordinary rounded corners above */
-.squircle {
-  corner-shape: squircle;
-}
+@utility scrollbar-none {
+  scrollbar-width: none;
 
-html:lang(zh-TW) {
-  font-family:
-    "IBM Plex Sans", "IBM Plex Sans TC", "PingFang TC", "Microsoft JhengHei UI", system-ui,
-    sans-serif;
-}
-
-html:lang(ja) {
-  font-family:
-    "IBM Plex Sans", "IBM Plex Sans JP", "Hiragino Sans", "Yu Gothic UI", system-ui, sans-serif;
-}
-
-html:lang(ko) {
-  font-family:
-    "IBM Plex Sans", "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui,
-    sans-serif;
-}
-
-::selection {
-  background-color: #fed7aa;
-}
-
-/* The composer, date headings, and cards have independent snapshots so they
-   move together during mode changes; the unnamed root stays still. */
-::view-transition-old(root),
-::view-transition-new(root) {
-  animation: none;
-}
-
-.vt-composer {
-  view-transition-name: composer;
-}
-
-/* cards are named through the --vt-item custom property set inline per card;
-   the property is invalid at computed-value time when unset, which leaves
-   view-transition-name as none for anything that is not a card */
-article[data-card-id] {
-  view-transition-name: var(--vt-item, none);
-}
-
-html[data-mode-from="text"] {
-  --vt-out-x: -28px;
-  --vt-in-x: 28px;
-}
-
-html[data-mode-from="file"] {
-  --vt-out-x: 28px;
-  --vt-in-x: -28px;
-}
-
-/* the slide plays only for a mode switch (setMode raises data-mode-anim for
-   exactly that transition); unrelated view transitions snapshot the composer
-   too, and without this gate they would replay the slide out of nowhere */
-html[data-mode-anim]::view-transition-old(composer) {
-  animation: vt-out 0.2s ease both;
-}
-
-html[data-mode-anim]::view-transition-new(composer) {
-  animation: vt-in 0.2s ease both;
-}
-
-@keyframes vt-out {
-  to {
-    opacity: 0;
-    transform: translateX(var(--vt-out-x, 28px)) scale(0.98);
+  &::-webkit-scrollbar {
+    display: none;
   }
 }
 
-@keyframes vt-in {
-  from {
-    opacity: 0;
-    transform: translateX(var(--vt-in-x, -28px)) scale(0.98);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  ::view-transition-group(*),
-  ::view-transition-old(*),
-  ::view-transition-new(*) {
-    animation-duration: 0.01ms;
-  }
-}
-.scroll-autohide {
+@utility scroll-autohide {
   scrollbar-width: thin;
   scrollbar-color: transparent transparent;
-}
 
-.scroll-autohide::-webkit-scrollbar {
-  width: 6px;
-}
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
 
-.scroll-autohide::-webkit-scrollbar-track {
-  background: transparent;
-}
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
 
-.scroll-autohide::-webkit-scrollbar-thumb {
-  border-radius: 9999px;
-  background: transparent;
-}
+  &::-webkit-scrollbar-thumb {
+    border-radius: 9999px;
+    background: transparent;
+  }
 
-.scroll-autohide:hover::-webkit-scrollbar-thumb {
-  background: rgb(168 162 158 / 0.45);
-}
+  &:hover::-webkit-scrollbar-thumb {
+    background: rgb(168 162 158 / 0.45);
+  }
 
-.scroll-autohide.scrolling {
-  scrollbar-color: rgb(168 162 158 / 0.9) transparent;
-}
+  &.scrolling {
+    scrollbar-color: rgb(168 162 158 / 0.9) transparent;
 
-.scroll-autohide.scrolling::-webkit-scrollbar-thumb {
-  background: rgb(168 162 158 / 0.9);
-}
-
-/* code areas: bundled IBM Plex Mono, local copy preferred */
-.code-font {
-  font-family: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
-}
-
-/* shiki emits a complete <pre class="shiki"> with inline theme colors;
-   the card owns background and scrolling, so neutralize the rest */
-pre.shiki {
-  margin: 0;
-  padding: 0.75rem;
-  background-color: #fafaf9 !important;
-  color: inherit;
-  font-family: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
-  font-size: 13px;
-  line-height: 1.625;
-  overflow-x: auto;
-  scrollbar-width: thin;
-  scrollbar-color: transparent transparent;
-}
-
-pre.shiki code {
-  font-family: inherit;
-}
-
-/* an open popover must escape the card's own paint order: view-transition
-   paint over the menu; lift the host card while hovered or while it hosts a
-   floating panel (touch: no hover, the :has() arm covers it) */
-article[data-card-id]:hover,
-article[data-card-id]:has([data-floating]) {
-  z-index: 1;
-}
-
-/* desktop hover affordance for history cards: a whisper of warmth and a
-   slightly firmer edge; touch devices never trigger hover states */
-@media (hover: hover) {
-  .card-hover:hover {
-    border-color: #d6d3d1;
-    background-color: #fdfcfa;
+    &::-webkit-scrollbar-thumb {
+      background: rgb(168 162 158 / 0.9);
+    }
   }
 }
 
-/* File actions share two fixed columns across the owner and public views. */
-.file-action-group {
-  display: grid;
-  grid-template-columns: repeat(2, auto);
-  align-items: center;
-  gap: 0.25rem;
-}
+/* Generated markup and View Transition pseudo-elements need CSS selectors. */
+@layer components {
+  /* shiki emits a complete <pre class="shiki"> with inline theme colors;
+     the card owns background and scrolling, so neutralize the rest */
+  pre.shiki {
+    margin: 0;
+    padding: 0.75rem;
+    background-color: var(--color-stone-50) !important;
+    color: inherit;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    line-height: 1.625;
+    overflow-x: auto;
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
+  }
 
-button,
-.ui-chrome {
-  -webkit-user-select: none;
-  user-select: none;
-}
+  pre.shiki code {
+    font-family: inherit;
+  }
 
-.ui-chrome {
-  -webkit-touch-callout: none;
+  /* The composer, date headings, and cards have independent snapshots so they
+     move together during mode changes; the unnamed root stays still. */
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none;
+  }
+
+  html[data-mode-from="text"] {
+    --vt-out-x: -28px;
+    --vt-in-x: 28px;
+  }
+
+  html[data-mode-from="file"] {
+    --vt-out-x: 28px;
+    --vt-in-x: -28px;
+  }
+
+  /* the slide plays only for a mode switch (setMode raises data-mode-anim for
+     exactly that transition); unrelated view transitions snapshot the composer
+     too, and without this gate they would replay the slide out of nowhere */
+  html[data-mode-anim]::view-transition-old(composer) {
+    animation: vt-out 0.2s ease both;
+  }
+
+  html[data-mode-anim]::view-transition-new(composer) {
+    animation: vt-in 0.2s ease both;
+  }
+
+  @keyframes vt-out {
+    to {
+      opacity: 0;
+      transform: translateX(var(--vt-out-x, 28px)) scale(0.98);
+    }
+  }
+
+  @keyframes vt-in {
+    from {
+      opacity: 0;
+      transform: translateX(var(--vt-in-x, -28px)) scale(0.98);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    ::view-transition-group(*),
+    ::view-transition-old(*),
+    ::view-transition-new(*) {
+      animation-duration: 0.01ms;
+    }
+  }
 }

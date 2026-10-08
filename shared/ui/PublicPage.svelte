@@ -99,7 +99,7 @@
                 minlength="6"
                 maxlength="128"
                 autocomplete="current-password"
-                class="code-font h-11 w-full rounded-lg border border-stone-300 bg-white pl-3 pr-12 text-sm hover:border-stone-400 focus:border-stone-500 focus:outline-none"
+                class="font-mono h-11 w-full rounded-lg border border-stone-300 bg-white pl-3 pr-12 text-sm hover:border-stone-400 focus:border-stone-500 focus:outline-none"
               />
               <button
                 type="button"
@@ -124,7 +124,7 @@
         <FileBrowser files={view.files} base={view.path + "/files"} {m} zipBase={view.path} />
       {:else}
         <pre
-          class="code-font mt-4 overflow-auto rounded-xl border border-stone-200 bg-stone-50 p-4 text-sm whitespace-pre-wrap break-words">{view.text}</pre>
+          class="font-mono mt-4 overflow-auto rounded-xl border border-stone-200 bg-stone-50 p-4 text-sm whitespace-pre-wrap break-words">{view.text}</pre>
         <button
           onclick={copy}
           class="mt-4 rounded-lg border border-stone-300 bg-white px-4 py-2 text-sm font-medium text-stone-700 hover:bg-stone-100"

@@ -134,7 +134,7 @@
           readonly
           value={shareUrl}
           aria-label={m.shareLink}
-          class="min-w-0 flex-1 rounded-lg border border-stone-200 bg-white px-3 py-2 text-xs text-stone-700"
+          class="min-w-0 flex-1 rounded-lg border border-stone-200 bg-white px-3 py-2 text-base pointer-fine:text-xs text-stone-700"
         />
         <button
           type="button"
@@ -210,7 +210,7 @@
             max="1000000"
             step="1"
             placeholder={m.unlimited}
-            class="h-11 w-full rounded-lg border border-stone-300 bg-white px-3 text-sm text-stone-700 hover:border-stone-400 focus:border-stone-500 focus:outline-none"
+            class="h-11 w-full rounded-lg border border-stone-300 bg-white px-3 text-base pointer-fine:text-sm text-stone-700 hover:border-stone-400 focus:border-stone-500 focus:outline-none"
           />
         </div>
         {#if mode === "password"}
@@ -228,7 +228,7 @@
                 maxlength="128"
                 placeholder={canKeepPassword ? m.keepPassword : m.passwordHint}
                 autocomplete="new-password"
-                class="code-font h-11 w-full min-w-0 rounded-lg border border-stone-300 bg-white pl-3 pr-[4.5rem] text-sm hover:border-stone-400 focus:border-stone-500 focus:outline-none"
+                class="font-mono h-11 w-full min-w-0 rounded-lg border border-stone-300 bg-white pl-3 pr-[4.5rem] text-base pointer-fine:text-sm hover:border-stone-400 focus:border-stone-500 focus:outline-none"
               />
               <div class="absolute inset-y-0 right-1 flex items-center">
                 <button

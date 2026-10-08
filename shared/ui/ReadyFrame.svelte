@@ -71,8 +71,14 @@
   {@render children()}
 </div>
 {#if !ready}
-  <div class="ready-frame-loader" role="status" aria-label={messages[displayLang].loading}>
-    <span></span><span></span><span></span>
+  <div
+    class="ready-frame-loader pointer-events-none fixed inset-0 flex items-center justify-center gap-[0.4rem] opacity-0"
+    role="status"
+    aria-label={messages[displayLang].loading}
+  >
+    <span class="size-1.5 rounded-full bg-stone-500"></span><span
+      class="size-1.5 rounded-full bg-stone-500"
+    ></span><span class="size-1.5 rounded-full bg-stone-500"></span>
   </div>
 {/if}
 
@@ -84,27 +90,14 @@
     visibility: visible;
   }
   .font-fallback {
-    font-family: system-ui, sans-serif;
-  }
-  .font-fallback :global(.code-font) {
-    font-family: ui-monospace, monospace;
+    --font-ui: system-ui, sans-serif;
+    --font-mono: ui-monospace, monospace;
+    font-family: var(--font-ui);
   }
   .ready-frame-loader {
-    opacity: 0;
     animation: reveal-loader 0s 120ms forwards;
-    position: fixed;
-    inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.4rem;
-    pointer-events: none;
   }
   .ready-frame-loader span {
-    width: 0.375rem;
-    height: 0.375rem;
-    border-radius: 50%;
-    background: #78716c;
     animation: pulse 900ms ease-in-out infinite;
   }
   .ready-frame-loader span:nth-child(2) {

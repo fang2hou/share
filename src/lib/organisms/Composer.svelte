@@ -77,11 +77,11 @@
   onMount(() => () => clearTimeout(hideScrollId));
 </script>
 
-<div class="vt-composer relative z-20">
+<div class="[view-transition-name:composer] relative z-20">
   {#if mode === "text"}
     <div class="space-y-2.5">
       <div
-        class="squircle rounded-2xl border border-stone-300/90 bg-white transition-colors hover:border-stone-400 focus-within:border-stone-500"
+        class="rounded-lg border border-stone-300/90 bg-white transition-colors hover:border-stone-400 focus-within:border-stone-500 pointer-fine:rounded-2xl pointer-fine:squircle"
       >
         <!-- svelte-ignore a11y_autofocus -->
         <textarea
@@ -100,7 +100,7 @@
           bind:value={filename}
           maxlength={64}
           placeholder={m.filenamePlaceholder}
-          class="code-font h-9 min-w-32 flex-1 rounded-lg border border-stone-300/90 bg-white px-2.5 text-sm text-stone-700 placeholder:font-sans placeholder:text-stone-400 hover:border-stone-400 focus:border-stone-500 focus:outline-none"
+          class="font-mono h-9 min-w-32 flex-1 rounded-lg border border-stone-300/90 bg-white px-2.5 text-base pointer-fine:text-sm text-stone-700 placeholder:font-sans placeholder:text-stone-400 hover:border-stone-400 focus:border-stone-500 focus:outline-none"
         />
         <!-- the dot reads filename + suffix as one file name -->
         <span
@@ -120,7 +120,7 @@
           type="button"
           onclick={() => void submit()}
           disabled={!canSend}
-          class="group ml-auto flex h-9 items-center rounded-lg bg-orange-600 px-5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-orange-700 active:scale-[.98] disabled:pointer-events-none disabled:opacity-40"
+          class="group ml-auto flex h-11 w-full items-center justify-center rounded-lg bg-orange-600 px-5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-orange-700 active:scale-[.98] disabled:pointer-events-none disabled:opacity-40 sm:h-9 sm:w-auto"
         >
           <!-- hover reveals the send shortcut; the flexible filename input
                yields the width so nothing else in the row moves -->

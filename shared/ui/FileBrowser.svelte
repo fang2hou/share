@@ -80,7 +80,7 @@
         />
         {m.selectAll} <span class="text-stone-400">{selected.length}/{files.length}</span>
       </label>
-      <div class="file-action-group">
+      <div class="grid grid-cols-[repeat(2,auto)] items-center gap-1">
         <Tooltip label={m.downloadZip}>
           {#snippet children(attach, description)}
             <a
@@ -130,7 +130,7 @@
           <p class="truncate text-sm font-medium text-stone-800" title={file.name}>{file.name}</p>
           <p class="text-xs text-stone-400">{formatFileSize(file.size)}</p>
         </div>
-        <div class="file-action-group">
+        <div class="grid grid-cols-[repeat(2,auto)] items-center gap-1">
           {#if previewKind(file.type, file.size)}<button
               type="button"
               aria-label={m.preview}
@@ -188,7 +188,7 @@
       {#if previewLoading}<p class="text-sm text-stone-500">{m.previewLoading}</p>
       {:else if previewFailed}<p role="alert" class="text-sm text-red-600">{m.previewFailed}</p>
       {:else}<pre
-          class="code-font max-h-[65dvh] overflow-auto rounded-lg border border-stone-200 bg-stone-50 p-3 text-sm whitespace-pre-wrap break-words">{previewText}</pre>{/if}
+          class="font-mono max-h-[65dvh] overflow-auto rounded-lg border border-stone-200 bg-stone-50 p-3 text-sm whitespace-pre-wrap break-words">{previewText}</pre>{/if}
       {#if preview.size > TEXT_PREVIEW_CHUNK_BYTES}
         <div class="mt-3 flex flex-wrap items-center justify-between gap-2">
           <button

@@ -236,7 +236,7 @@
   bind:this={root}
   {@attach trackViewport}
   onfocusout={onFocusout}
-  class="picker relative"
+  class="picker group/picker relative data-floating:z-40"
   data-open={open}
   data-above={above}
   data-floating={floating ? "" : undefined}
@@ -258,7 +258,9 @@
     placeholder={open && !value ? searchPlaceholder : placeholder}
     autocomplete="off"
     spellcheck="false"
-    class="picker-input code-font relative z-10 h-9 w-full rounded-lg border border-stone-300/90 bg-white px-2.5 pr-8 text-sm text-stone-700 placeholder:font-sans placeholder:text-stone-400 hover:border-stone-400 focus:border-stone-500 focus:outline-none"
+    class="font-mono relative z-10 h-9 w-full rounded-lg border px-2.5 pr-8 text-base text-stone-700 transition-colors duration-120 placeholder:font-sans placeholder:text-stone-400 focus:outline-none pointer-fine:text-sm motion-reduce:transition-none {open
+      ? 'border-transparent bg-transparent'
+      : 'border-stone-300/90 bg-white hover:border-stone-400 focus:border-stone-500'}"
   />
   <button
     type="button"
@@ -296,21 +298,21 @@
   </button>
 
   <div
-    class="picker-panel absolute inset-x-0 z-0 rounded-lg border border-stone-400 bg-white shadow-lg"
+    class="picker-panel pointer-events-none invisible absolute inset-x-0 top-0 z-0 pt-9 opacity-0 group-data-[open=true]/picker:pointer-events-auto group-data-[open=true]/picker:visible group-data-[open=true]/picker:opacity-100 group-data-[above=true]/picker:top-auto group-data-[above=true]/picker:bottom-0 group-data-[above=true]/picker:pt-0 group-data-[above=true]/picker:pb-9 rounded-lg border border-stone-400 bg-white shadow-lg"
     inert={!open}
     aria-hidden={!open}
     ontransitionend={(e) => {
       if (e.target === e.currentTarget && !open) floating = false;
     }}
   >
-    <div class="picker-scroll-area relative">
+    <div class="relative">
       <ul
         bind:this={list}
         {@attach trackScrollbar}
         id="{id}-list"
         role="listbox"
         aria-label={placeholder}
-        class="picker-options relative overflow-y-auto overscroll-contain p-1"
+        class="scrollbar-none relative max-h-(--list-height) overflow-y-auto overscroll-contain border-t border-stone-100 p-1 group-data-[above=true]/picker:border-t-0 group-data-[above=true]/picker:border-b"
       >
         {#each filtered as entry, i (entry.suffix)}
           <li role="presentation">
@@ -334,7 +336,7 @@
             >
               <span class="truncate">{entry.name}</span>
               <span
-                class="code-font shrink-0 text-xs {entry.suffix === value
+                class="font-mono shrink-0 text-xs {entry.suffix === value
                   ? 'text-orange-600'
                   : 'text-stone-400'}">.{entry.suffix}</span
               >
@@ -350,7 +352,7 @@
         type="button"
         tabindex="-1"
         aria-hidden="true"
-        class="picker-scroll-thumb"
+        class="pointer-events-none absolute top-1 right-1 w-1 touch-none rounded-full border-0 bg-stone-400/35 p-0 opacity-0 transition-opacity duration-300 data-[visible=true]:pointer-events-auto data-[visible=true]:opacity-100 data-[visible=true]:duration-80 data-[dragging=true]:bg-stone-500/55 motion-reduce:transition-none"
         data-visible={open && thumbHeight > 0 && scrollbarVisible}
         data-dragging={dragging}
         style="height: {thumbHeight}px; transform: translateY({thumbTop}px)"
@@ -365,92 +367,22 @@
 </div>
 
 <style>
-  .picker[data-floating] {
-    z-index: 40;
-  }
-
-  .picker-input {
-    transition:
-      border-color 120ms ease,
-      background-color 120ms ease;
-  }
-
-  .picker[data-open="true"] .picker-input {
-    border-color: transparent;
-    background-color: transparent;
-  }
-
+  /* Delay visibility until the fade finishes so floating panels can close smoothly. */
   .picker-panel {
-    top: 0;
-    padding-top: 2.25rem;
-    visibility: hidden;
-    opacity: 0;
-    pointer-events: none;
     transition:
       opacity 120ms ease,
       visibility 0s 120ms;
   }
 
   .picker[data-open="true"] .picker-panel {
-    visibility: visible;
-    opacity: 1;
-    pointer-events: auto;
     transition:
       opacity 160ms ease,
       visibility 0s;
   }
 
-  .picker-options {
-    max-height: var(--list-height);
-    border-top: 1px solid #f5f5f4;
-    scrollbar-width: none;
-  }
-
-  .picker-options::-webkit-scrollbar {
-    display: none;
-  }
-
-  .picker-scroll-thumb {
-    position: absolute;
-    top: 4px;
-    right: 4px;
-    width: 4px;
-    padding: 0;
-    border: 0;
-    border-radius: 999px;
-    background: rgb(168 162 158 / 0.35);
-    opacity: 0;
-    pointer-events: none;
-    touch-action: none;
-    transition: opacity 300ms ease;
-  }
-
-  .picker-scroll-thumb[data-visible="true"] {
-    opacity: 1;
-    pointer-events: auto;
-    transition-duration: 80ms;
-  }
-
-  .picker-scroll-thumb[data-dragging="true"] {
-    background: rgb(120 113 108 / 0.55);
-  }
-
-  .picker[data-above="true"] .picker-panel {
-    top: auto;
-    bottom: 0;
-    padding-top: 0;
-    padding-bottom: 2.25rem;
-  }
-
-  .picker[data-above="true"] .picker-options {
-    border-top: 0;
-    border-bottom: 1px solid #f5f5f4;
-  }
-
   @media (prefers-reduced-motion: reduce) {
-    .picker-input,
     .picker-panel,
-    .picker-scroll-thumb {
+    .picker[data-open="true"] .picker-panel {
       transition: none;
     }
   }

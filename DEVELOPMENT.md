@@ -50,3 +50,9 @@ Local and CI run the exact same commands: `mise run check` and `mise run test` (
 ## Shared public UI
 
 `shared/ui/` owns components used by both the SPA and the public share views. Edit these components once; do not add Worker HTML templates or separate public versions of the header, language menu, or file browser. `pnpm build` produces both the SvelteKit shell and the public Svelte SSR/client artifacts. `mise run dev:worker` prepares the public artifacts, and Vite rebuilds them when shared UI or CSS changes. Generated renderers and hashed assets are not committed.
+
+## Styling
+
+Use Tailwind utilities in component markup for layout, typography, responsive sizing, and interaction states. Define shared font and color tokens with `@theme` in `src/app.css`; keep document defaults in `@layer base`. Register custom utilities with `@utility` only for behavior without a built-in utility, such as continuous corners and scrollbar styling. Keep scoped CSS for transitions that need coordinated timing, and global component CSS for generated Shiki markup and View Transition pseudo-elements.
+
+Use inline styles for values calculated at runtime, such as upload progress, scroll thumb positions, and item transition names. Text inputs use `text-base` by default and smaller text only with `pointer-fine`, keeping touch inputs readable without iOS focus zoom. Use `font-sans` for localized UI copy and placeholders, and `font-mono` for filenames, extensions, and code; both resolve through the shared theme and font fallback.
