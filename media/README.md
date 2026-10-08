@@ -7,6 +7,10 @@ previews. Development and production builds run this step automatically.
 
 ## Sources (edit these, then regenerate derivatives)
 
+- `logo.svg` — README wordmark, outlined from the bundled IBM Plex Sans Bold
+  Latin font with the app's letter spacing. All lettering is SVG paths; the
+  orange dot uses the brand accent. A cream rounded rectangle keeps the ink
+  lettering and orange dot consistent across light and dark themes.
 - `icon-parts.json` — icon geometry master: squircle shell (superellipse n=5),
   "S"/digit/"+" outlines extracted from IBM Plex Sans SC Bold, dot placement,
   and the palette. `src/lib/favicon-svg.ts` reads this file directly; the
