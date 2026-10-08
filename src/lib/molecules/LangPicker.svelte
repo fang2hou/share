@@ -27,6 +27,77 @@
   let highlightIndex = $state(0);
   let above = $state(false);
   let listHeight = $state(256);
+  let thumbHeight = $state(0);
+  let thumbTop = $state(0);
+  let scrollbarVisible = $state(false);
+  let dragging = $state(false);
+  let hideTimer: ReturnType<typeof setTimeout> | undefined;
+  let dragStart: { pointerId: number; y: number; scrollTop: number } | undefined;
+
+  function updateScrollbar(node: HTMLUListElement): void {
+    const height = node.clientHeight;
+    const overflow = node.scrollHeight - height;
+    const trackHeight = Math.max(0, height - 8);
+    const size =
+      overflow > 0
+        ? Math.min(trackHeight, Math.max(24, (trackHeight * height) / node.scrollHeight))
+        : 0;
+    thumbHeight = size;
+    thumbTop = overflow > 0 ? ((trackHeight - size) * node.scrollTop) / overflow : 0;
+  }
+
+  function showScrollbar(): void {
+    clearTimeout(hideTimer);
+    scrollbarVisible = true;
+    hideTimer = setTimeout(() => {
+      if (!dragging) scrollbarVisible = false;
+    }, 900);
+  }
+
+  function trackScrollbar(node: HTMLUListElement): () => void {
+    const update = (): void => updateScrollbar(node);
+    const onScroll = (): void => {
+      update();
+      showScrollbar();
+    };
+    const resize = new ResizeObserver(update);
+    const content = new MutationObserver(update);
+    resize.observe(node);
+    content.observe(node, { childList: true, subtree: true });
+    node.addEventListener("scroll", onScroll, { passive: true });
+    update();
+    return () => {
+      resize.disconnect();
+      content.disconnect();
+      node.removeEventListener("scroll", onScroll);
+      clearTimeout(hideTimer);
+    };
+  }
+
+  function startDrag(e: PointerEvent): void {
+    if (!list || e.button !== 0) return;
+    e.preventDefault();
+    dragStart = { pointerId: e.pointerId, y: e.clientY, scrollTop: list.scrollTop };
+    dragging = true;
+    (e.currentTarget as HTMLButtonElement).setPointerCapture(e.pointerId);
+    showScrollbar();
+  }
+
+  function moveDrag(e: PointerEvent): void {
+    if (!list || !dragStart || dragStart.pointerId !== e.pointerId) return;
+    const travel = list.clientHeight - 8 - thumbHeight;
+    if (travel <= 0) return;
+    list.scrollTop =
+      dragStart.scrollTop +
+      ((e.clientY - dragStart.y) * (list.scrollHeight - list.clientHeight)) / travel;
+  }
+
+  function endDrag(e: PointerEvent): void {
+    if (dragStart?.pointerId !== e.pointerId) return;
+    dragStart = undefined;
+    dragging = false;
+    showScrollbar();
+  }
 
   const filtered = $derived(
     !filtering || query.trim() === ""
@@ -68,6 +139,8 @@
   function closePanel(): void {
     // Keep the results unchanged while the surface fades out.
     open = false;
+    scrollbarVisible = false;
+    clearTimeout(hideTimer);
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) floating = false;
   }
 
@@ -197,7 +270,10 @@
     onclick={() => {
       if (value) clear();
       else if (open) closePanel();
-      else input?.focus({ preventScroll: true });
+      else {
+        input?.focus({ preventScroll: true });
+        openPanel();
+      }
     }}
     class="absolute top-1/2 right-1 z-20 flex size-7 -translate-y-1/2 items-center justify-center rounded text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-600 focus-visible:outline-2 focus-visible:outline-orange-500/40"
   >
@@ -227,47 +303,64 @@
       if (e.target === e.currentTarget && !open) floating = false;
     }}
   >
-    <ul
-      bind:this={list}
-      id="{id}-list"
-      role="listbox"
-      aria-label={placeholder}
-      class="picker-options relative overflow-y-auto overscroll-contain p-1"
-    >
-      {#each filtered as entry, i (entry.suffix)}
-        <li role="presentation">
-          <button
-            type="button"
-            id="{id}-{entry.suffix}"
-            role="option"
-            tabindex="-1"
-            aria-selected={entry.suffix === value}
-            data-suffix={entry.suffix}
-            title="{entry.name} (.{entry.suffix})"
-            onmousedown={(e) => e.preventDefault()}
-            onclick={() => pick(entry.suffix)}
-            onpointerenter={(e) => {
-              if (e.pointerType === "mouse") highlightIndex = i;
-            }}
-            class="flex min-h-9 w-full cursor-pointer items-center justify-between gap-2 rounded px-2 text-left text-sm transition-colors {entry.suffix ===
-            value
-              ? 'font-medium text-stone-900'
-              : 'text-stone-600'} {i === highlightIndex ? 'bg-stone-100' : ''}"
-          >
-            <span class="truncate">{entry.name}</span>
-            <span
-              class="code-font shrink-0 text-xs {entry.suffix === value
-                ? 'text-orange-600'
-                : 'text-stone-400'}">.{entry.suffix}</span
+    <div class="picker-scroll-area relative">
+      <ul
+        bind:this={list}
+        {@attach trackScrollbar}
+        id="{id}-list"
+        role="listbox"
+        aria-label={placeholder}
+        class="picker-options relative overflow-y-auto overscroll-contain p-1 pr-3"
+      >
+        {#each filtered as entry, i (entry.suffix)}
+          <li role="presentation">
+            <button
+              type="button"
+              id="{id}-{entry.suffix}"
+              role="option"
+              tabindex="-1"
+              aria-selected={entry.suffix === value}
+              data-suffix={entry.suffix}
+              title="{entry.name} (.{entry.suffix})"
+              onmousedown={(e) => e.preventDefault()}
+              onclick={() => pick(entry.suffix)}
+              onpointerenter={(e) => {
+                if (e.pointerType === "mouse") highlightIndex = i;
+              }}
+              class="flex min-h-9 w-full cursor-pointer items-center justify-between gap-2 rounded px-2 text-left text-sm transition-colors {entry.suffix ===
+              value
+                ? 'font-medium text-stone-900'
+                : 'text-stone-600'} {i === highlightIndex ? 'bg-stone-100' : ''}"
             >
-          </button>
-        </li>
-      {:else}
-        <li role="presentation" class="px-2 py-4 text-center text-sm text-stone-400">
-          {noResults}
-        </li>
-      {/each}
-    </ul>
+              <span class="truncate">{entry.name}</span>
+              <span
+                class="code-font shrink-0 text-xs {entry.suffix === value
+                  ? 'text-orange-600'
+                  : 'text-stone-400'}">.{entry.suffix}</span
+              >
+            </button>
+          </li>
+        {:else}
+          <li role="presentation" class="px-2 py-4 text-center text-sm text-stone-400">
+            {noResults}
+          </li>
+        {/each}
+      </ul>
+      <button
+        type="button"
+        tabindex="-1"
+        aria-hidden="true"
+        class="picker-scroll-thumb"
+        data-visible={open && thumbHeight > 0 && scrollbarVisible}
+        data-dragging={dragging}
+        style="height: {thumbHeight}px; transform: translateY({thumbTop}px)"
+        onpointerdown={startDrag}
+        onpointermove={moveDrag}
+        onpointerup={endDrag}
+        onpointercancel={endDrag}
+        onlostpointercapture={endDrag}
+      ></button>
+    </div>
   </div>
 </div>
 
@@ -310,7 +403,36 @@
   .picker-options {
     max-height: var(--list-height);
     border-top: 1px solid #f5f5f4;
-    scrollbar-width: thin;
+    scrollbar-width: none;
+  }
+
+  .picker-options::-webkit-scrollbar {
+    display: none;
+  }
+
+  .picker-scroll-thumb {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 4px;
+    padding: 0;
+    border: 0;
+    border-radius: 999px;
+    background: rgb(168 162 158 / 0.8);
+    opacity: 0;
+    pointer-events: none;
+    touch-action: none;
+    transition: opacity 300ms ease;
+  }
+
+  .picker-scroll-thumb[data-visible="true"] {
+    opacity: 1;
+    pointer-events: auto;
+    transition-duration: 80ms;
+  }
+
+  .picker-scroll-thumb[data-dragging="true"] {
+    background: #78716c;
   }
 
   .picker[data-above="true"] .picker-panel {
@@ -327,7 +449,8 @@
 
   @media (prefers-reduced-motion: reduce) {
     .picker-input,
-    .picker-panel {
+    .picker-panel,
+    .picker-scroll-thumb {
       transition: none;
     }
   }
