@@ -102,7 +102,7 @@
 
 <section
   aria-label={m.share}
-  class="mt-3 rounded-xl border border-stone-200 bg-stone-50 p-3 sm:p-4"
+  class="squircle mt-3 rounded-xl border border-stone-200 bg-stone-50 p-3 sm:p-4"
 >
   <div class="mb-4 flex items-center justify-between gap-3">
     <h3 class="text-sm font-semibold text-stone-800">{m.share}</h3>

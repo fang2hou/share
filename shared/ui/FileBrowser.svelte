@@ -65,7 +65,7 @@
   }
 </script>
 
-<div class="mt-3 overflow-hidden rounded-[var(--file-list-radius,0.75rem)] border border-stone-200">
+<div class="mt-3 overflow-hidden rounded-[var(--file-list-radius,0.5rem)] border border-stone-200">
   {#if files.length > 1}
     <div class="flex flex-wrap items-center gap-2 border-b border-stone-200 bg-stone-50 px-3 py-2">
       <label class="mr-auto flex items-center gap-2 text-xs font-medium text-stone-600 select-none">

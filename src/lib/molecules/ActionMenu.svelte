@@ -60,7 +60,7 @@
       class="squircle absolute top-11 right-0 z-50 w-max min-w-36 space-y-1 rounded-xl border border-stone-200 bg-white p-1.5 shadow-lg"
     >
       <button
-        class="flex w-full items-center gap-2.5 rounded-lg px-3 py-1.5 text-left text-sm transition-colors select-none pointer-coarse:min-h-11 {shareActive
+        class="flex w-full items-center gap-2.5 rounded-[5px] px-3 py-1.5 text-left text-sm transition-colors select-none pointer-coarse:min-h-11 {shareActive
           ? 'bg-emerald-50 font-medium text-emerald-700'
           : 'text-stone-600 hover:bg-stone-100'}"
         onclick={() => {
@@ -76,7 +76,7 @@
       </button>
       {#if showEdit}
         <button
-          class="flex w-full items-center gap-2.5 rounded-lg px-3 py-1.5 text-left text-sm text-stone-600 transition-colors select-none hover:bg-stone-100 pointer-coarse:min-h-11"
+          class="flex w-full items-center gap-2.5 rounded-[5px] px-3 py-1.5 text-left text-sm text-stone-600 transition-colors select-none hover:bg-stone-100 pointer-coarse:min-h-11"
           onclick={() => {
             onEdit();
             open = false;
@@ -91,7 +91,7 @@
       {/if}
       {#if showDownload}
         <button
-          class="flex w-full items-center gap-2.5 rounded-lg px-3 py-1.5 text-left text-sm text-stone-600 transition-colors select-none hover:bg-stone-100 pointer-coarse:min-h-11"
+          class="flex w-full items-center gap-2.5 rounded-[5px] px-3 py-1.5 text-left text-sm text-stone-600 transition-colors select-none hover:bg-stone-100 pointer-coarse:min-h-11"
           onclick={() => {
             onDownload();
             open = false;
@@ -102,7 +102,7 @@
         </button>
       {/if}
       <button
-        class="flex w-full items-center gap-2.5 rounded-lg px-3 py-1.5 text-left text-sm transition-colors select-none pointer-coarse:min-h-11 {confirmDelete
+        class="flex w-full items-center gap-2.5 rounded-[5px] px-3 py-1.5 text-left text-sm transition-colors select-none pointer-coarse:min-h-11 {confirmDelete
           ? 'bg-red-50 font-medium text-red-600'
           : 'text-stone-600 hover:bg-stone-100'}"
         onclick={() => void remove()}

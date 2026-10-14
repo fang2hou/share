@@ -363,7 +363,7 @@
         aria-expanded={group.expanded}
         {@attach suppressContextMenu}
         style:view-transition-name={`day-${group.key}`}
-        class="ui-chrome flex w-full items-center gap-2 rounded-xl px-2 py-1.5 text-left transition-colors hover:bg-stone-200/60"
+        class="ui-chrome squircle flex w-full items-center gap-2 rounded-xl px-2 py-1.5 text-left transition-colors hover:bg-stone-200/60"
       >
         <svg
           class="size-4 shrink-0 text-stone-400 transition-transform {group.expanded

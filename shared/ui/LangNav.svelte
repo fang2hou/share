@@ -90,7 +90,7 @@
     class="group flex min-h-9 min-w-11 cursor-pointer items-center justify-center rounded-xl border border-stone-200/80 bg-white p-1 shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-500 pointer-coarse:min-h-11"
   >
     <span
-      class="h-(--header-control-height) flex min-w-9 items-center justify-center rounded-lg bg-stone-100 transition-colors group-hover:bg-stone-200 px-3 text-xs sm:text-sm font-medium text-stone-700 select-none"
+      class="h-(--header-control-height) flex min-w-9 items-center justify-center rounded-[7px] bg-stone-100 transition-colors group-hover:bg-stone-200 px-3 text-xs sm:text-sm font-medium text-stone-700 select-none"
       >{current.short}</span
     >
   </button>
@@ -113,7 +113,7 @@
             onPick(language.id);
             close(true);
           }}
-          class="flex min-h-11 w-full cursor-pointer items-center justify-between gap-3 rounded-lg px-3 text-left text-sm select-none hover:bg-stone-100 focus-visible:bg-stone-100 focus-visible:outline-none {lang ===
+          class="flex min-h-11 w-full cursor-pointer items-center justify-between gap-3 rounded-[5px] px-3 text-left text-sm select-none hover:bg-stone-100 focus-visible:bg-stone-100 focus-visible:outline-none {lang ===
           language.id
             ? 'font-semibold text-orange-600'
             : 'text-stone-600'}"

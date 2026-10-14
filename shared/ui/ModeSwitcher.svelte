@@ -20,7 +20,7 @@
   aria-label="{labelText} / {labelFiles}"
 >
   <span
-    class="absolute inset-y-1 left-1 w-[calc(50%-0.25rem)] rounded-lg bg-stone-200 transition-transform duration-200 ease-out {mode ===
+    class="absolute inset-y-1 left-1 w-[calc(50%-0.25rem)] rounded-[7px] bg-stone-200 transition-transform duration-200 ease-out {mode ===
     'file'
       ? 'translate-x-full'
       : ''}"

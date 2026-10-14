@@ -124,7 +124,7 @@
         <FileBrowser files={view.files} base={view.path + "/files"} {m} zipBase={view.path} />
       {:else}
         <pre
-          class="font-mono mt-4 overflow-auto rounded-xl border border-stone-200 bg-stone-50 p-4 text-sm whitespace-pre-wrap break-words">{view.text}</pre>
+          class="font-mono mt-4 overflow-auto rounded-lg border border-stone-200 bg-stone-50 p-4 text-sm whitespace-pre-wrap break-words">{view.text}</pre>
         <button
           onclick={copy}
           class="mt-4 rounded-lg border border-stone-300 bg-white px-4 py-2 text-sm font-medium text-stone-700 hover:bg-stone-100"
