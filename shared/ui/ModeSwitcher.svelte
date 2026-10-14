@@ -15,7 +15,7 @@
 </script>
 
 <div
-  class="squircle relative flex items-center rounded-2xl border border-stone-200/80 bg-white p-1 shadow-sm"
+  class="squircle relative flex items-center rounded-[14px] border border-stone-200/80 bg-white p-1 shadow-sm"
   role="group"
   aria-label="{labelText} / {labelFiles}"
 >
