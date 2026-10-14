@@ -165,6 +165,27 @@
   }
 }
 
+@layer utilities {
+  /* Header controls use circular arcs: 14px outside minus the 1px border
+     and 4px padding gives a concentric 9px inner radius. */
+  header .squircle[role="group"],
+  header .squircle[aria-haspopup="menu"] {
+    corner-shape: round;
+    border-radius: 14px;
+  }
+
+  header .squircle[role="group"] > span {
+    inset-block: 4px;
+    left: 4px;
+    width: calc(50% - 4px);
+    border-radius: 9px;
+  }
+
+  header .squircle[role="group"] > button {
+    border-radius: 9px;
+  }
+}
+
 /* Generated markup and View Transition pseudo-elements need CSS selectors. */
 @layer components {
   /* shiki emits a complete <pre class="shiki"> with inline theme colors;
