@@ -63,6 +63,30 @@
   let draftSuffix = $state<string | null>(null);
   let highlighted = $state("");
   let shareOpen = $state(false);
+  let textScroller = $state<HTMLDivElement | null>(null);
+  let textTopFade = $state(false);
+  let textBottomFade = $state(false);
+
+  function measureTextScroll(): void {
+    const el = textScroller;
+    if (!el) return;
+    textTopFade = el.scrollTop > 0;
+    // 1px slack absorbs fractional scrollHeight at pinch-zoom / non-integer zoom levels
+    textBottomFade = el.scrollTop + el.clientHeight < el.scrollHeight - 1;
+  }
+
+  // initial measurement plus re-measure whenever the scroller or its content
+  // changes size: scroll events, text swaps (edit-save), rotation, window
+  // resize, and late webfont swaps all land here without extra wiring
+  $effect(() => {
+    const el = textScroller;
+    if (!el) return;
+    measureTextScroll();
+    const ro = new ResizeObserver(() => measureTextScroll());
+    ro.observe(el);
+    for (const child of Array.from(el.children)) ro.observe(child);
+    return () => ro.disconnect();
+  });
 
   const cardFiles = $derived(
     item.kind === "file"
@@ -300,9 +324,30 @@
         {/if}
       </div>
     {:else}
-      <p class="mt-2 text-base leading-relaxed break-words whitespace-pre-wrap text-stone-800">
-        {spaceCjk(item.text)}
-      </p>
+      <!-- fades are siblings of the scroller: absolute children inside a scroll container scroll with the content -->
+      <div class="relative mt-2">
+        <div
+          bind:this={textScroller}
+          onscroll={measureTextScroll}
+          class="scrollbar-none max-h-64 overflow-y-auto"
+        >
+          <p class="text-base leading-relaxed break-words whitespace-pre-wrap text-stone-800">
+            {spaceCjk(item.text)}
+          </p>
+        </div>
+        {#if textTopFade}
+          <div
+            aria-hidden="true"
+            class="pointer-events-none absolute inset-x-0 top-0 h-6 bg-linear-to-b from-white via-white/60 via-55% to-transparent"
+          ></div>
+        {/if}
+        {#if textBottomFade}
+          <div
+            aria-hidden="true"
+            class="pointer-events-none absolute inset-x-0 bottom-0 h-6 bg-linear-to-t from-white via-white/60 via-55% to-transparent"
+          ></div>
+        {/if}
+      </div>
     {/if}
   {/if}
 
