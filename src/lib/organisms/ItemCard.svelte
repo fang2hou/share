@@ -75,10 +75,17 @@
     textBottomFade = el.scrollTop + el.clientHeight < el.scrollHeight - 1;
   }
 
-  // initial measurement plus re-measure when the text swaps (e.g. after an edit-save)
+  // initial measurement plus re-measure whenever the scroller or its content
+  // changes size: scroll events, text swaps (edit-save), rotation, window
+  // resize, and late webfont swaps all land here without extra wiring
   $effect(() => {
-    void item.text;
-    if (textScroller) measureTextScroll();
+    const el = textScroller;
+    if (!el) return;
+    measureTextScroll();
+    const ro = new ResizeObserver(() => measureTextScroll());
+    ro.observe(el);
+    for (const child of Array.from(el.children)) ro.observe(child);
+    return () => ro.disconnect();
   });
 
   const cardFiles = $derived(
