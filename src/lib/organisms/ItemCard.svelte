@@ -194,7 +194,7 @@
 <article
   data-card-id={item.id}
   style:view-transition-name={`item-${item.id}`}
-  class="squircle relative hover:z-1 hover:border-stone-300 hover:bg-[#fdfcfa] has-[[data-floating]]:z-1 [--file-list-radius:7px] rounded-2xl border border-stone-200/80 bg-white p-4 transition {pending
+  class="squircle relative hover:z-1 hover:border-stone-300 hover:bg-[#fdfcfa] has-[[data-floating]]:z-1 [--file-list-radius:8px] rounded-2xl border border-stone-200/80 bg-white p-4 transition {pending
     ? 'opacity-60'
     : ''}"
 >
@@ -235,7 +235,7 @@
       <button
         onclick={() => void save()}
         disabled={saving}
-        class="rounded-lg bg-stone-900 px-4 py-2 text-sm font-semibold text-white transition-colors disabled:opacity-60"
+        class="rounded-lg bg-stone-700 px-4 py-2 text-sm font-semibold text-white transition-colors disabled:opacity-60"
       >
         {m.save}
       </button>
@@ -272,7 +272,7 @@
           download
           aria-label={isCollection ? m.downloadZip : m.download}
           title={isCollection ? m.downloadZip : m.download}
-          class="squircle flex size-10 shrink-0 items-center justify-center rounded-xl bg-stone-900 text-white transition-all hover:bg-stone-700 active:scale-[.97]"
+          class="squircle flex size-10 shrink-0 items-center justify-center rounded-xl bg-stone-700 text-white transition-all hover:bg-stone-600 active:scale-[.97]"
         >
           <Icon name="download" size={17} />
         </a>
@@ -286,7 +286,7 @@
             ? 'bg-emerald-600'
             : copyState === 'fail'
               ? 'bg-red-600'
-              : 'bg-stone-900 hover:bg-stone-700'}"
+              : 'bg-stone-700 hover:bg-stone-600'}"
         >
           <Icon name={copyState === "ok" ? "check" : "copy"} size={17} />
         </button>
@@ -338,13 +338,13 @@
         {#if textTopFade}
           <div
             aria-hidden="true"
-            class="pointer-events-none absolute inset-x-0 top-0 h-6 bg-linear-to-b from-white via-white/60 via-55% to-transparent"
+            class="pointer-events-none absolute inset-x-0 top-0 h-12 bg-linear-to-b from-white via-white/60 via-55% to-transparent"
           ></div>
         {/if}
         {#if textBottomFade}
           <div
             aria-hidden="true"
-            class="pointer-events-none absolute inset-x-0 bottom-0 h-6 bg-linear-to-t from-white via-white/60 via-55% to-transparent"
+            class="pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-linear-to-t from-white via-white/60 via-55% to-transparent"
           ></div>
         {/if}
       </div>

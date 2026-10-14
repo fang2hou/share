@@ -15,12 +15,12 @@
 </script>
 
 <div
-  class="relative flex items-center rounded-xl border border-stone-200/80 bg-white p-1 shadow-sm"
+  class="squircle relative flex items-center rounded-[14px] border border-stone-200/80 bg-white p-1 shadow-sm"
   role="group"
   aria-label="{labelText} / {labelFiles}"
 >
   <span
-    class="absolute inset-y-1 left-1 w-[calc(50%-0.25rem)] rounded-lg bg-stone-200 transition-transform duration-200 ease-out {mode ===
+    class="absolute inset-y-1 left-1 w-[calc(50%-0.25rem)] rounded-[9px] bg-stone-200 transition-transform duration-200 ease-out {mode ===
     'file'
       ? 'translate-x-full'
       : ''}"
