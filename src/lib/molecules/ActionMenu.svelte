@@ -57,7 +57,7 @@
   {#if open}
     <div
       data-floating
-      class="squircle absolute top-11 right-0 z-50 w-max min-w-36 space-y-1 rounded-xl border border-stone-200 bg-white p-1.5 shadow-lg"
+      class="squircle absolute top-11 right-0 z-50 w-max min-w-36 space-y-1 rounded-xl pointer-coarse:rounded-[15px] border border-stone-200 bg-white p-1.5 shadow-lg"
     >
       <button
         class="flex w-full items-center gap-2.5 rounded-[5px] pointer-coarse:rounded-lg px-3 py-1.5 text-left text-sm transition-colors select-none pointer-coarse:min-h-11 {shareActive
