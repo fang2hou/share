@@ -87,7 +87,7 @@
     aria-controls={menuId}
     onclick={() => (open = !open)}
     onkeydown={openFromKeyboard}
-    class="group flex min-h-9 min-w-11 cursor-pointer items-center justify-center rounded-xl border border-stone-200/80 bg-white p-1 shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-500 pointer-coarse:min-h-11"
+    class="group squircle flex min-h-9 min-w-11 cursor-pointer items-center justify-center rounded-xl border border-stone-200/80 bg-white p-1 shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-500 pointer-coarse:min-h-11"
   >
     <span
       class="h-(--header-control-height) flex min-w-9 items-center justify-center rounded-[7px] bg-stone-100 transition-colors group-hover:bg-stone-200 px-3 text-xs sm:text-sm font-medium text-stone-700 select-none"
@@ -101,7 +101,7 @@
       tabindex="-1"
       aria-label={label}
       onkeydown={onMenuKeydown}
-      class="absolute top-full right-0 z-50 mt-2 w-40 max-w-[calc(100vw-2rem)] rounded-xl border border-stone-200 bg-white p-1.5 shadow-lg"
+      class="squircle absolute top-full right-0 z-50 mt-2 w-40 max-w-[calc(100vw-2rem)] rounded-xl border border-stone-200 bg-white p-1.5 shadow-lg"
     >
       {#each LANGS as language (language.id)}
         <button
