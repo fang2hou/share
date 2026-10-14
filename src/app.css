@@ -73,6 +73,7 @@
       sans-serif;
     font-family: var(--font-ui);
     -webkit-text-size-adjust: 100%;
+    scrollbar-gutter: stable;
   }
 
   html:lang(zh-TW) {
